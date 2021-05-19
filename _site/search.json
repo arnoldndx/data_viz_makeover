@@ -9,11 +9,25 @@
       "last_modified": "2021-05-19T21:29:46+08:00"
     },
     {
+      "path": "dataviz1.html",
+      "title": "Data Viz Makeover 1",
+      "description": "Analysing Singapore's Merchandise Trade by Region/Market\n",
+      "author": [
+        {
+          "name": "Arnold Ng",
+          "url": "https://arnoldndx.netlify.app/"
+        }
+      ],
+      "date": "`r Sys.Date()`",
+      "contents": "\r\n\r\nContents\r\n1. Critique of the visualisation\r\n1.1 Clarity\r\n1.2 Aesthetics\r\n\r\n\r\n1. Critique of the visualisation\r\n\r\nOriginal data visualisation\r\n1.1 Clarity\r\nThe axes ranges are not standardised across each graph in the grid. This makes it difficult to compare the trends and figures from each country with each other.\r\n1.2 Aesthetics\r\n\r\n\r\n\r\n",
+      "last_modified": "2021-05-20T00:04:13+08:00"
+    },
+    {
       "path": "index.html",
       "title": "Data Viz Makeover - Arnold Ng",
       "author": [],
       "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-05-19T21:29:47+08:00"
+      "last_modified": "2021-05-19T21:34:33+08:00"
     }
   ],
   "collections": ["posts/posts.json"]
