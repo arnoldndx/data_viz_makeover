@@ -24,7 +24,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 </center>
 
-## 1.1 Clarity
+## 1.1 Clarity  
 **The axes ranges are not standardised across each graph in the grid.** This makes it difficult to compare the trends and figures from each country with each other.  
 
 ## 1.2 Aesthetics
