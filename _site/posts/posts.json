@@ -6,31 +6,14 @@
     "author": [
       {
         "name": "Arnold Ng",
-        "url": "https://example.com/norajones"
+        "url": {}
       }
     ],
     "date": "2021-05-22",
     "categories": [],
-    "contents": "\r\n1. Critique of the visualisation\r\n\r\nOriginal data visualisation\r\n1.1 Clarity\r\nThe intent of the visualisation is to describe Singapore’s top six trade relationships between 2019 and 2020. However, it is difficult to discern a clear narrative from the visualisation because:\r\nThe axes ranges are not standardised across each graph in the grid. This makes it difficult to compare the trends and figures from each country with each other as each are on different scales.\r\nOn each grid, the primary (export) and secondary (import) axes ranges are not standardised. This makes it difficult to compare the relative proportion of import to exports for each trading partner. This proportion informs the reader whether the Singapore has a trade deficit or surplus with the respective trading partner. This detail is one of the key statistics used in defining a trading relationship.\r\nThe time scales are not standardised across the different trading partners. Japan only has data for 2020, while all the others show data from 2019 to 2021.\r\nThe time scales also do not match the title, which says “Merchandise Trade of Top Six Trading Countries, 2019-2020” even though 5 of the 6 grids show data going all the way to 2021, and the remaining grid (Japan) only shows data from 2020.\r\nIt is not be meaningful to visualise the data as a time series as the data shows little variation between 2019 and 2020, as would be expected as trade relationships rarely change significantly over a period of one to two years.\r\n1.2 Aesthetics\r\nBesides clarity the aesthetics of the visualisation could also be improved. Some observed weaknesses are:\r\nUse of area graphs clutters the visualisation with unnecessary data ink. The fill is not meaningful as it does not help to highlight anything from the data. Simple line graphs could easily communicate the same message with less clutter.\r\nGrid is too small making it difficult to make out details in the data. Visualising the data individually for each country results in a very cramped grid which is difficult to read as each graph is too small.\r\nWasted white space below the color legend. The space in the visualisation is not utilised well. With the main visualisation already cramped, the space under the legend could have been better utilised by data ink.\r\n2. Proposed alternative visualisation\r\n2.1 Proposed narrative\r\n2.2 Sketch of alternative visualisation\r\n3. Step-by-step guide on preparing data visualisation in Tableau\r\n4. Three major observations\r\n\r\n\r\n\r\n",
+    "contents": "\r\n1. Critique of the visualisation\r\n\r\nOriginal data visualisation\r\n1.1 Clarity\r\nThe intent of the visualisation is to describe Singapore’s top six trade relationships between 2019 and 2020. However, it is difficult to discern a clear narrative from the visualisation because:\r\nThe axes ranges are not standardised across each graph in the grid. This makes it difficult to compare the trends and figures from each country with each other as each are on different scales.\r\nOn each grid, the primary (export) and secondary (import) axes ranges are not standardised. This makes it difficult to compare the relative proportion of import to exports for each trading partner. This proportion informs the reader whether the Singapore has a trade deficit or surplus with the respective trading partner. This detail is one of the key statistics used in defining a trading relationship.\r\nThe time scales are not standardised across the different trading partners. Japan only has data for 2020, while all the others show data from 2019 to 2021.\r\nThe time scales also do not match the title, which says “Merchandise Trade of Top Six Trading Countries, 2019-2020” even though 5 of the 6 grids show data going all the way to 2021, and the remaining grid (Japan) only shows data from 2020.\r\nIt is not be meaningful to visualise the data as a time series as the data shows little variation between 2019 and 2020, as would be expected as trade relationships rarely change significantly over a period of one to two years.\r\n1.2 Aesthetics\r\nBesides clarity the aesthetics of the visualisation could also be improved. Some observed weaknesses are:\r\nUse of area graphs clutters the visualisation with unnecessary data ink. The fill is not meaningful as it does not help to highlight anything from the data. Simple line graphs could easily communicate the same message with less clutter.\r\nGrid is too small making it difficult to make out details in the data. Visualising the data individually for each country results in a very cramped grid which is difficult to read as each graph is too small.\r\nWasted white space below the color legend. The space in the visualisation is not utilised well. With the main visualisation already cramped, the space under the legend could have been better utilised by data ink.\r\n2. Proposed alternative visualisation\r\n2.1 Proposed narrative\r\n2.2 Sketch of alternative visualisation\r\n3. Step-by-step guide on preparing data visualisation in Tableau\r\n4. Three major observations\r\n\r\nNew data visualisation\r\n\r\n\r\n\r\n",
     "preview": {},
-    "last_modified": "2021-05-23T23:19:01+08:00",
+    "last_modified": "2021-05-27T23:30:20+08:00",
     "input_file": "my-1st-post.knit.md"
-  },
-  {
-    "path": "posts/welcome/",
-    "title": "Welcome to Data Viz Makeover - Arnold Ng",
-    "description": "Welcome to our new blog, Data Viz Makeover - Arnold Ng. We hope you enjoy \nreading what we have to say!",
-    "author": [
-      {
-        "name": "Arnold Ng",
-        "url": "https://example.com/norajones"
-      }
-    ],
-    "date": "2021-05-19",
-    "categories": [],
-    "contents": "\r\n\r\n\r\n\r\n",
-    "preview": {},
-    "last_modified": "2021-05-19T21:34:33+08:00",
-    "input_file": {}
   }
 ]

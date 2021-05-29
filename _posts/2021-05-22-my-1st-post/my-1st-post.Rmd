@@ -54,3 +54,8 @@ Besides clarity the aesthetics of the visualisation could also be improved. Some
 
 # 4. Three major observations
 
+<center>
+
+![New data visualisation](new_viz.png)
+
+</center>
