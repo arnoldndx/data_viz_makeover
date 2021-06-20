@@ -1,10 +1,11 @@
 ---
-title: "Data Viz Makeover 1"
+title: "Data Viz Makeover 2"
 description: |
   A critque and makeover of a Singapore trade data visualisation.
 author:
   - name: Arnold Ng
-date: 05-30-2021
+    url: {}
+date: 06-20-2021
 output:
   distill::distill_article:
     self_contained: false
@@ -213,3 +214,4 @@ From the visualisation, we can make the following observations:
 * **Our top 5 trade relationships account for nearly half of our merchandise trade by volume, and our top 20 account for about 90% of our merchandise trade.** This shows that while we are fairly well diversified geographically speaking, Singapore is still quite dependent on a handful of major trading partners.
 
 * **We are a net exporter.** We export about 10% more merchandise (by value) than we import, which indicates that we run a trade surplus with regards to merchandise. Some of our trade relationships feature a significant trade imbalance (e.g. trade with Hong kong runs a signficant surplus, while trade with Taiwan runs a significant deficit). This information, along with information types of merchandise exported, services trade data, etc. are important to inform our exchange rate policy, which has significant impacts on our trade.
+
