@@ -137,9 +137,15 @@ Executing the visualisation described in Section 2, we produce the following gra
 
 <center>
 
-![New data visualisation](newviz.png)
+![Example of New data visualisation](newviz.png)
 
 </center>
+
+**Embedded Interactive Visualisation**
+
+```{r, echo=FALSE}
+htmltools::includeHTML("embed.html")
+```
 
 From the visualisation, we can make the following observations:
 
