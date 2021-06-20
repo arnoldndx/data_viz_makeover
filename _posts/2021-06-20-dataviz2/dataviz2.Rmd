@@ -78,11 +78,13 @@ The proposed visualisation will address the issues raised above.
 
 * **Axes are labeled in the middle of the axis for clarity.**
 
+* **Bubble size scales linearly, with the area corresponding to the relative volume of bilateral trade with respective country.**
+
+* **Reduce opacity of bubble fills so that all data points can be clearly visible.**
+
 * **Total Bilateral Trade is plotted separately as a supplementary chart.** This will allow the reader to quickly see how our trade relationships are ranked year to year and identify trends (e.g. are some countries/regions becoming more/less important over time).
 
 * **Balance of trade is plotted separately as a supplementary chart.** This does away with the need to identify 'Top net exporter' or 'Top net importer' with icons as the balance of trade plot will show the relative ranking of the various countries over time. We can also see trends in our trade relationships over time (E.g. some relationships evolving from net exporter to net importer and vice versa).
-
-* **Reduce opacity of bubble fills so that all data points can be clearly visible.**
 
 * **Link all charts so that when a country is selected, it will be highlighted across all charts for attention.** This will allow the reader to zoom into the relevant country and make comparisons.
 
@@ -131,7 +133,7 @@ htmltools::includeHTML("embed.html")
 
 From the visualisation, we can make the following observations:
 
-* **Since 2011, our trade with China and the United States has grown most strongly, with China surpassing Malaysia as our main trading partner in 2013.** The increase in mechandise trade volume with the United States has been driven by strong export growth, which has caused the relationship to evolve from a net importer to net exporter in 2020. With China, growth is more even between both imports and exports and our balance of trade has been largely hovering between +1.0B to +13.0B.
+* **Since 2011, our trade with China and the United States has grown most strongly, with China surpassing Malaysia as our main trading partner in 2013.** The increase in merchandise trade volume with the United States has been driven by strong export growth, which has caused the relationship to evolve from a net importer to net exporter in 2020. With China, growth is more even between both imports and exports and our balance of trade has been largely hovering between +1.0B to +13.0B.
 
 * **Our trading relationship with Malaysia has been steadily changing over time, from a net exporter with +14.9B balance of trade in 2011 to a net importer with -11.6B balance of trade in 2020.** This could be due to a shift in our economy to focus more on high-tech manufacturing and services which have less demand in Malaysia, while we continue to purchase large quantities of food and other commodities from Malaysia.
 
