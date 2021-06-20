@@ -135,17 +135,17 @@ And now you're done!
 
 Executing the visualisation described in Section 2, we produce the following graphic. The workbook can also be accessed on Tableau Public [here](https://public.tableau.com/app/profile/arnold.ng6549/viz/datavizmakeover2_16242002706520/Dashboard1).
 
-```{r, echo=FALSE}
-htmltools::includeHTML("embed.html")
-```
+<center>
+
+![New data visualisation](newviz.png)
+
+</center>
 
 From the visualisation, we can make the following observations:
 
-* **It becomes immediately apparent that the original visualisation was incorrect in identifying Singapore's top 6 merchandise trade relationships.** It should be Indonesia and not Japan which is included in the top 6.
+* **Since 2011, our trade with China and the United States has grown most strongly, with China surpassing Malaysia as our main trading partner in 2013.** The increase in mechandise trade volume with the United States has been driven by strong export growth, which has caused the relationship to evolve from a net importer to net exporter in 2020. With China, growth is more even between both imports and exports and our balance of trade has been largely hovering between +1.0B to +13.0B.
 
-* **We have a diverse and global set of trading partners,** with four continents represented amongst our top 20 merchandise trading relationships.
+* **Our trading relationship with Malaysia has been steadily changing over time, from a net exporter with +14.9B balance of trade in 2011 to a net importer with -11.6B balance of trade in 2020.** This could be due to a shift in our economy to focus more on high-tech manufacturing and services which have less demand in Malaysia, while we continue to purchase large quantities of food and other commodities from Malaysia.
 
-* **Our top 5 trade relationships account for nearly half of our merchandise trade by volume, and our top 20 account for about 90% of our merchandise trade.** This shows that while we are fairly well diversified geographically speaking, Singapore is still quite dependent on a handful of major trading partners.
-
-* **We are a net exporter.** We export about 10% more merchandise (by value) than we import, which indicates that we run a trade surplus with regards to merchandise. Some of our trade relationships feature a significant trade imbalance (e.g. trade with Hong kong runs a signficant surplus, while trade with Taiwan runs a significant deficit). This information, along with information types of merchandise exported, services trade data, etc. are important to inform our exchange rate policy, which has significant impacts on our trade.
+* **Our well diversified portfolio of trading relationships allows us to maintain a health balance of trade.** Even though relationships with individual countries have been changing significantly over time due to trends in the global economy as well as Singapore's efforts to transform our economy to remain relevant in the future, we are still able to maintain a healthy current account balance as we balance lost export revenue from some countries with increased export revenue to other countries.
 
