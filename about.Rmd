@@ -1,5 +1,5 @@
 ---
 title: "About this blog"
-description: |
-  Some additional details about the blog
 ---
+
+This blog hosts the Data Visualisation Makeover assignments for ISSS608 Visual Analytics and Applications for Arnold Ng.

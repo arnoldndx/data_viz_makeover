@@ -3,10 +3,9 @@
     {
       "path": "about.html",
       "title": "About this blog",
-      "description": "Some additional details about the blog",
       "author": [],
-      "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-05-19T21:29:46+08:00"
+      "contents": "\r\nThis blog hosts the Data Visualisation Makeover assignments for ISSS608 Visual Analytics and Applications for Arnold Ng.\r\n\r\n\r\n\r\n",
+      "last_modified": "2021-06-21T00:58:55+08:00"
     },
     {
       "path": "dataviz1.html",
@@ -27,7 +26,7 @@
       "title": "Data Viz Makeover - Arnold Ng",
       "author": [],
       "contents": "\r\n\r\n\r\n\r\n",
-      "last_modified": "2021-05-19T21:34:33+08:00"
+      "last_modified": "2021-06-21T00:28:33+08:00"
     }
   ],
   "collections": ["posts/posts.json"]
