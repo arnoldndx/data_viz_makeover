@@ -1,6 +1,6 @@
 [
   {
-    "path": "posts/2021-06-20-data-viz-makeover-2/",
+    "path": "posts/2021-06-20-dataviz2/",
     "title": "Data Viz Makeover 2",
     "description": "A critque and makeover of a Singapore trade data visualisation.",
     "author": [
@@ -17,7 +17,7 @@
     "input_file": "dataviz2.knit.md"
   },
   {
-    "path": "posts/2021-05-30-data-viz-makeover-1/",
+    "path": "posts/2021-05-30-dataviz1/",
     "title": "Data Viz Makeover 1",
     "description": "A critque and makeover of a Singapore trade date visualisation.",
     "author": [
