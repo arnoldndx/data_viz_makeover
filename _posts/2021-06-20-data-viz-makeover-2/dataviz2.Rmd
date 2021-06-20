@@ -100,7 +100,7 @@ The proposed visualisation will address the issues raised above.
 
 ## 3.1 Data preparation in Excel
 
-As the dataset used is the same as Data Viz Makeover 1, we follow the same steps noted in [Data Viz Makeover 1](https://arnoldndx.netlify.app/posts/2021-05-22-my-1st-post/) to prepare the data.
+As the dataset used is the same as Data Viz Makeover 1, we follow the same steps noted in [Data Viz Makeover 1](https://arnoldndx.netlify.app/posts/2021-05-30-data-viz-makeover-1/) to prepare the data.
 
 ## 3.2 Visualisation in Tableau
 
