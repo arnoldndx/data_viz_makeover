@@ -116,7 +116,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["aes2.png","clarity2.png","clarity4.png","dataviz2_files/anchor-4.2.2/anchor.min.js","dataviz2_files/bowser-1.9.3/bowser.min.js","dataviz2_files/distill-2.2.21/template.v2.js","dataviz2_files/header-attrs-2.8/header-attrs.js","dataviz2_files/jquery-1.11.3/jquery.min.js","dataviz2_files/popper-2.6.0/popper.min.js","dataviz2_files/tippy-6.2.7/tippy-bundle.umd.min.js","dataviz2_files/tippy-6.2.7/tippy-light-border.css","dataviz2_files/tippy-6.2.7/tippy.css","dataviz2_files/tippy-6.2.7/tippy.umd.min.js","dataviz2_files/webcomponents-2.0.0/webcomponents.js","embed.html","newviz.png","original_viz.jpg","step1.PNG","step10a.png","step10b.png","step10c.png","step11.PNG","step12.PNG","step13.png","step14a.png","step14b.PNG","step14c.png","step14d.PNG","step15.png","step2.PNG","step3.PNG","step4.PNG","step5a.PNG","step5b.png","step6a.png","step6b.png","step7a.png","step7b.png","step7c.png","step8.png","step9.png","vissketch.png"]}
+  {"type":"character","attributes":{},"value":["aes2.png","clarity2.png","clarity4.png","dataviz2_files/anchor-4.2.2/anchor.min.js","dataviz2_files/bowser-1.9.3/bowser.min.js","dataviz2_files/distill-2.2.21/template.v2.js","dataviz2_files/header-attrs-2.8/header-attrs.js","dataviz2_files/jquery-1.11.3/jquery.min.js","dataviz2_files/popper-2.6.0/popper.min.js","dataviz2_files/tippy-6.2.7/tippy-bundle.umd.min.js","dataviz2_files/tippy-6.2.7/tippy-light-border.css","dataviz2_files/tippy-6.2.7/tippy.css","dataviz2_files/tippy-6.2.7/tippy.umd.min.js","dataviz2_files/webcomponents-2.0.0/webcomponents.js","embed.html","newviz.png","original_viz.jpg","step1.PNG","step10a.png","step10b.png","step10c.png","step11.PNG","step12.PNG","step13.png","step14a.png","step14b.PNG","step14c.png","step14d.PNG","step15.png","step16.PNG","step18a.PNG","step18b.png","step18c.png","step19.PNG","step2.PNG","step20.png","step3.PNG","step4.PNG","step5a.PNG","step5b.png","step6a.png","step6b.png","step7a.png","step7b.png","step7c.png","step8.png","step9.png","vissketch.png"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
   <!--/radix_placeholder_navigation_in_header-->
@@ -1651,8 +1651,33 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </tr>
 <tr class="odd">
 <td>15</td>
-<td>Hurray! You are now done with the bubble chart. Name this sheet “Left” and duplicate the sheet by right-clicking the sheet tab at the bottom and clicking duplicate.</td>
+<td>Hurray! You are now done with the bubble chart. Name this sheet “Left” and duplicate the sheet by right-clicking the sheet tab at the bottom and clicking duplicate. Name this sheet “Right”</td>
 <td><img src="step15.png" alt="Step 15" /></td>
+</tr>
+<tr class="even">
+<td>16</td>
+<td>We now create the line graphs to show the total bilateral trade and balance of trade over time. To do so, create a new sheet and drag <em>Total Bilateral Trade</em> to rows and <em>Date</em> to columns. Select “Year” to aggreagate the measure by year. Filter by <em>Country/Region</em> and <em>Date</em> so that we only see the ten countries we are studying and the data is shown for 2011 to 2020. Color code by country region and add in a country/region label (see similar steps above if unsure). Name this sheet “Bilat Trade”. Create an informative tooltip.</td>
+<td><img src="step16.PNG" alt="Step 16" /></td>
+</tr>
+<tr class="odd">
+<td>17</td>
+<td>Create another new sheet. Drag <em>Balance of Trade</em> to rows and <em>Date</em> to columns. Select “Year” to aggreagate the measure by year. Filter by <em>Country/Region</em> and <em>Date</em> so that we only see the ten countries we are studying and the data is shown for 2011 to 2020. Color code by country region and add in a country/region label (see similar steps above if unsure). Name this sheet “BoT” for Balance of Trade.</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>18</td>
+<td>We want to create some additional annotations on the BoT chart to highlight to users when a country is a net importer or exporter. First create a reference line by right-clicking the vertical axis and clicking “Add Reference Line”. Format the reference line so that it stands out. Label this line “Breakeven point” and fill the area below the line grey. Format the reference line label by clicking on the reference line and selecting format. Adjust the text to make it prominent and set the shading opacity. Right-click anywhere on the chart and create an area annotation. Do one for “Net Exporter” and one for “Net Importer”. Adjust the font colors and positioning to make clear which area of the graph the annotation is referring to.</td>
+<td><img src="step18a.PNG" alt="Step 18" /> <img src="step18b.png" alt="Step 18" /> <img src="step18c.png" alt="Step 18" /></td>
+</tr>
+<tr class="odd">
+<td>19</td>
+<td>Create an informative tooltip (see similar steps above if unsure).</td>
+<td><img src="step19.PNG" alt="Step 19" /></td>
+</tr>
+<tr class="even">
+<td>20</td>
+<td>Now put everything together by creating a new dashboard. Drag and drop the various sheets onto the dashboard and position accordingly. We will use floating text tiles to show that the two bubble charts are meant to be compared by putting a “vs” in the middle. We will also use the floating text tile to create an annotation that the bubble sizes are based on total bilateral trade volume. Create a floating text tile by selecting “Floating” under the <em>Dashboard</em> pane and dragging a text tile from “Objects” onto the dashboard.</td>
+<td><img src="step20.png" alt="Step 20" /></td>
 </tr>
 </tbody>
 </table>
