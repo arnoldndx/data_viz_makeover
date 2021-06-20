@@ -117,7 +117,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"NULL"}
+  {"type":"character","attributes":{},"value":["aes2.png","clarity2.png","clarity4.png","dataviz2_files/anchor-4.2.2/anchor.min.js","dataviz2_files/bowser-1.9.3/bowser.min.js","dataviz2_files/distill-2.2.21/template.v2.js","dataviz2_files/header-attrs-2.8/header-attrs.js","dataviz2_files/jquery-1.11.3/jquery.min.js","dataviz2_files/popper-2.6.0/popper.min.js","dataviz2_files/tippy-6.2.7/tippy-bundle.umd.min.js","dataviz2_files/tippy-6.2.7/tippy-light-border.css","dataviz2_files/tippy-6.2.7/tippy.css","dataviz2_files/tippy-6.2.7/tippy.umd.min.js","dataviz2_files/webcomponents-2.0.0/webcomponents.js","embed.html","original_viz.jpg","vissketch.png"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
 <meta name="distill:offset" content="../.."/>
@@ -2107,11 +2107,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <li><a href="#clarity">1.1 Clarity</a></li>
 <li><a href="#aesthetics">1.2 Aesthetics</a></li>
 </ul></li>
-<li><a href="#proposed-alternative-visualisation">2. Proposed alternative visualisation</a>
-<ul>
-<li><a href="#proposed-narrative">2.1 Proposed narrative</a></li>
-<li><a href="#sketch-of-alternative-visualisation">2.2 Sketch of alternative visualisation</a></li>
-</ul></li>
+<li><a href="#proposed-alternative-visualisation">2. Proposed alternative visualisation</a></li>
 <li><a href="#step-by-step-guide-on-preparing-data-visualisation-in-tableau">3. Step-by-step guide on preparing data visualisation in Tableau</a>
 <ul>
 <li><a href="#data-preparation-in-excel">3.1 Data preparation in Excel</a></li>
@@ -2124,120 +2120,68 @@ document.addEventListener('DOMContentLoaded', function() {
 <h1 id="critique-of-the-visualisation">1. Critique of the visualisation</h1>
 <center>
 <figure>
-<img src="original_viz.png" alt="Original data visualisation" /><figcaption aria-hidden="true">Original data visualisation</figcaption>
+<img src="original_viz.jpg" alt="Fig 1. Original data visualisation" /><figcaption aria-hidden="true">Fig 1. Original data visualisation</figcaption>
 </figure>
 </center>
 <h2 id="clarity">1.1 Clarity</h2>
-<p>The intent of the visualisation is to describe Singapore’s top six merchandise trade relationships between 2019 and 2020. However, it is difficult to discern a clear narrative from the visualisation because:</p>
+<p>The intent of the visualisation is to describe some of Singapore’s most important mechandise trade relationships. It shows which countries are net exporters to Singapore and which are net importers, and also informs the reader of the</p>
 <ul>
-<li><p><strong>The axes ranges are not standardised across each graph in the grid.</strong> This makes it difficult to compare the trends and figures from each country with each other as each are on different scales.</p></li>
-<li><p><strong>On each grid, the primary (export) and secondary (import) axes ranges are not standardised.</strong> This makes it difficult to compare the relative proportion of import to exports for each trading partner. This proportion informs the reader whether the Singapore has a trade deficit or surplus with the respective trading partner. This detail is one of the key statistics used in defining a trading relationship.</p></li>
-<li><p><strong>The time scales are not standardised across the different trading partners.</strong> Japan only has data for 2020, while all the others show data from 2019 to 2021.</p></li>
-<li><p><strong>The time scales also do not match the title,</strong> which says “Merchandise Trade of Top Six Trading Countries, 2019-2020” even though 5 of the 6 grids show data going all the way to 2021, and the remaining grid (Japan) only shows data from 2020.</p></li>
-<li><p><strong>It is not be meaningful to visualise the data as a time series</strong> as the data shows little variation between 2019 and 2020, as would be expected as trade relationships rarely change significantly over a period of one to two years.</p></li>
+<li><strong>Color coding used for two dimensions - export vs import, and country/region.</strong> This makes it confusing for the reader as there is too much color in the visualisation. In order to direct the readers attention appropriately, one visualisation detail (e.g. size, colour, axes) should be used for one data dimension only.</li>
+</ul>
+<center>
+<figure>
+<img src="clarity2.png" alt="Fig 2. Size does not scale linearly with total merchandise trade volume" /><figcaption aria-hidden="true">Fig 2. Size does not scale linearly with total merchandise trade volume</figcaption>
+</figure>
+</center>
+<ul>
+<li><p><strong>The scaling of the bubble size is not based on area (see Fig 2 above).</strong> Instead, it is the radius which is proportional to the total bilateral trade volume. This makes the size scale polynomially (i.e. the square of the total bilateral trade volume)instead of linearly which can give rise to misinterpretation as the reader usually assumes that the size will scale linearly.</p></li>
+<li><p><strong>The bubbles are opaque, obscuring the data points showing the export/import amounts of some countries.</strong> This makes it difficult to see exactly how much Singapore imports/exports to these countries. The data labels only quote the total bilateral merchandise trade volume, from which the reader cannot derive the import/export figures.</p></li>
+<li><p><strong>The axes labels at clustered around the origin rather than centred on the axes.</strong> This makes it difficult for the reader to tell at a glance which axis refers to exports and which to imports. The visualisation attempts to use colours to differentiate the axes, but it is not as effective as using title positioning.</p></li>
+</ul>
+<center>
+<figure>
+<img src="clarity4.png" alt="Fig 3. Annotation from original viz" /><figcaption aria-hidden="true">Fig 3. Annotation from original viz</figcaption>
+</figure>
+</center>
+<ul>
+<li><p><strong>The graphic does not help to convey to the reader the key message annotated in the blue box (see Fig 3 above).</strong> The key message in the blue box discusses Singapore’s overall balance of trade with the two largest economies in the world, Mainland China and the United States. It references trade data going back to 2006. However, the data in the visualisation only shows data for 2020.</p></li>
+<li><p><strong>The annotation does note use similar time scales in comparing the two countries.</strong> It compares trade with China dating back to 2009, but for the United States it uses trade data going back to 2006.</p></li>
+<li><p><strong>The visualisation designates a top net exporter and top net importer but does not explain what this means to the reader.</strong> It appears from inspection that this refers to the country with which Singapore has the highest and lowest balance of trade.</p></li>
 </ul>
 <h2 id="aesthetics">1.2 Aesthetics</h2>
 <p>Besides clarity the aesthetics of the visualisation could also be improved. Some observed weaknesses are:</p>
 <ul>
-<li><p><strong>Use of area graphs clutters the visualisation with unnecessary data ink.</strong> The fill is not meaningful as it does not help to highlight anything from the data. Simple line graphs could easily communicate the same message with less clutter.</p></li>
-<li><p><strong>Use of individual axes for each graph clutters the visualisation with alot of non-data ink. </strong> Standardising the axes would not only fix clarity issues (mentioned in Section 1.1), but also allow the removal of the axes from some of the grids to reduce non-data ink which distracts from the actual visualisation.</p></li>
-<li><p><strong>Grid is too small making it difficult to make out details in the data.</strong> Visualising the data individually for each country results in a very cramped grid which is difficult to read as each graph is too small.</p></li>
-<li><p><strong>Wasted white space below the color legend.</strong> The space in the visualisation is not utilised well. With the main visualisation already cramped, the space under the legend could have been better utilised by data ink.</p></li>
-</ul>
-<h1 id="proposed-alternative-visualisation">2. Proposed alternative visualisation</h1>
-<h2 id="proposed-narrative">2.1 Proposed narrative</h2>
-<p>The visualisation should inform the reader about Singapore’s merchandise trade based on the trading volume data. The user should be able to draw some key insights such as:</p>
-<ul>
-<li><p>Who are Singapore’s biggest trading partners?</p></li>
-<li><p>Is Singapore too dependent on a handful of countries?</p></li>
-<li><p>Does Singapore import more than we export?</p></li>
-</ul>
-<p>This narrative will help to give the reader an idea of Singapore’s merchandise trade dependecies.</p>
-<h2 id="sketch-of-alternative-visualisation">2.2 Sketch of alternative visualisation</h2>
-<p>Based on the above narrative, it is proposed that the data be visualised as a “pyramid” chart, where:</p>
-<ul>
-<li><p><strong>Export and Import volumes are visualised side by side on inverted axes.</strong> This will allow a reader to immediately see the total bilateral trade volume for a given country/region. It also informs the reader of the nature of the trading relationship with that country/region (e.g. surplus or deficit).</p></li>
-<li><p><strong>The data is sorted in descending order of total bilateral trade volume.</strong> This will allow the reader to immediately see which are our most important trading partners.</p></li>
-<li><p><strong>Data should be truncated to the top <em>N</em> trading relationships so that the visualisation does not get too cluttered.</strong> <em>N</em> should be a nice round number (e.g. 10, 20) to make for easy reading.</p></li>
-<li><p><strong>Axes should be removed to reduce non-data ink.</strong> They are unnecessary anyway, as the relative differences in the trading volumes are well captured by the length of the bars. We can also add data labels for easy reading.</p></li>
-<li><p><strong>Imports are put on the left as people tend to associate the rightward direction with outgoing and the leftward direction with incoming.</strong> This helps to make the visualisation more intuitive.</p></li>
-<li><p><strong>Use the same colors, but different shades, for imports and exports.</strong> This helps to reduce the number of different colours on the page and helps the reader to focus on the length of the bars which is the main focus of the visualisation.</p></li>
-<li><p><strong>Additional visualisation at the bottom shows how big a share of our merchandise trading volumes is dependent on the top <em>N</em> countries.</strong> This will help to give the reader a sense of our dependence on these relationships.</p></li>
+<li><strong>Use of large labels within opaque boxes creates a very cluttered impression.</strong> There is too much going on on the visualisation, with many boxes and icons scattered across the visualisation with very little explanatory value. For example, the data labels would be better served being inside the respective circles rather than sticking out from the circles to keep the rest of the graph clean.</li>
 </ul>
 <center>
 <figure>
-<img src="sketch.png" alt="Sketch of proposed data visualisation" /><figcaption aria-hidden="true">Sketch of proposed data visualisation</figcaption>
+<img src="aes2.png" alt="Fig 4. Unnecessary icons" /><figcaption aria-hidden="true">Fig 4. Unnecessary icons</figcaption>
+</figure>
+</center>
+<ul>
+<li><p><strong>Unnecessary use of large icons clutters visualisation with non-data ink. </strong> The icons (e.g. ‘Imports’/‘Exports’ and ‘Top Importer’/‘Top Exporter’) are unnecessary. For the ‘Imports’/‘Exports’ axes labels, the text would have been sufficient.</p></li>
+<li><p><strong>There is too much colour in the visualisation.</strong> Even the background is blue even though color coding is a key detail used to convey information in this visualisation. The clash of colours is very irritating to the reader as it takes attention away from the key points the visualisation is trying to make.</p></li>
+</ul>
+<h1 id="proposed-alternative-visualisation">2. Proposed alternative visualisation</h1>
+<p>The proposed visualisation will address the issues raised above.</p>
+<ul>
+<li><p><strong>An interactive side-by-side comparison of trade data from selected years will help readers to compare change in trade data over time.</strong> This will help users to draw conclusions on any change in the nature of our trade relationships (e.g. change from net exporter to net importer or vice versa) as well as the relative importance of our various trade relationships when compared with one another.</p></li>
+<li><p><strong>Color coding on the bubble chart will only be used for countries.</strong> This will help to direct the users attention appropriately to changes in our relationships with various countries/regions relative to each other.</p></li>
+<li><p><strong>Axes are labeled in the middle of the axis for clarity.</strong></p></li>
+<li><p><strong>Total Bilateral Trade is plotted separately as a supplementary chart.</strong> This will allow the reader to quickly see how our trade relationships are ranked year to year and identify trends (e.g. are some countries/regions becoming more/less important over time).</p></li>
+<li><p><strong>Balance of trade is plotted separately as a supplementary chart.</strong> This does away with the need to identify ‘Top net exporter’ or ‘Top net importer’ with icons as the balance of trade plot will show the relative ranking of the various countries over time. We can also see trends in our trade relationships over time (E.g. some relationships evolving from net exporter to net importer and vice versa).</p></li>
+<li><p><strong>Reduce opacity of bubble fills so that all data points can be clearly visible.</strong></p></li>
+<li><p><strong>Link all charts so that when a country is selected, it will be highlighted across all charts for attention.</strong> This will allow the reader to zoom into the relevant country and make comparisons.</p></li>
+<li><p><strong>Custom tooltips to highlight key information more clearly.</strong></p></li>
+</ul>
+<center>
+<figure>
+<img src="vissketch.png" alt="Sketch of proposed data visualisation" /><figcaption aria-hidden="true">Sketch of proposed data visualisation</figcaption>
 </figure>
 </center>
 <h1 id="step-by-step-guide-on-preparing-data-visualisation-in-tableau">3. Step-by-step guide on preparing data visualisation in Tableau</h1>
 <h2 id="data-preparation-in-excel">3.1 Data preparation in Excel</h2>
-<p>In order to use the data in Tableau to generate the desired visualisation, we would first have to “unstack” the table and ensure that the date is stored as a dimension, rather than be used as a column name. This will allow Tableau to process the data as a time series.</p>
-<center>
-<figure>
-<img src="step0.png" alt="Data transformation required" /><figcaption aria-hidden="true">Data transformation required</figcaption>
-</figure>
-</center>
-<p>This data transformation can be done using Excel VBA. Be sure to pay attention to the data, as there might be some inconsistency that will impact the transformation. For example, “na” is usually used to denote missing data. However, from Jan 1998 to Dec 1998, trade data for imports from ‘Yemen Democratic’ was indicated by ‘-’. The macro below includes code breaks to help pick out such issues. In this case, simple replace all ‘-’ with ‘na’.</p>
-<p>You may refer <a href="https://docs.microsoft.com/en-us/office/vba/library-reference/concepts/getting-started-with-vba-in-office">here</a> for details on how to use VBA on Microsoft Excel. The site will show you how to access the script editor. I’ve also provided the script I used to process the data below. This script can be copied into the script editor and run to transform the data into the desired form.</p>
-<p><strong>Example VBA script to perform data transformation:</strong></p>
-<div class="sourceCode">
-<pre><code>#VBA code to execute data processing
-
-Sub unstack_table()
-
-Dim data_range As Range
-Dim data As String
-
-If ActiveSheet.Name = &quot;T1&quot; Then
-    data = &quot;Imports&quot;
-ElseIf ActiveSheet.Name = &quot;T2&quot; Then
-    data = &quot;Exports&quot;
-Else
-    GoTo err_break1
-End If
-
-Set data_range = Range(&quot;B8&quot;, Range(&quot;B8&quot;).End(xlDown).End(xlToRight))
-
-For i = 1 To data_range.Rows.Count
-    For j = 1 To data_range.Columns.Count
-        If data_range.Cells(i, j) &lt;&gt; &quot;na&quot; Then
-            Sheets(data).Cells(1, 1).End(xlDown).Offset(1).Value = _
-              Trim(Split(data_range.Cells(i, 1).Offset(, -1).Text, &quot;(&quot;)(0))
-            Sheets(data).Cells(1, 2).End(xlDown).Offset(1).Value = _
-              Split(data_range.Cells(1, j).Offset(-2).Text, &quot; &quot;)(1) &amp; &quot; &quot; &amp; _
-              Split(data_range.Cells(1, j).Offset(-2).Text, &quot; &quot;)(0)
-            If Split(data_range.Cells(i, 1).Offset(, -1).Text, &quot;(&quot;)(1) = _
-              &quot;Thousand Dollars)&quot; Then
-                Sheets(data).Cells(1, 3).End(xlDown).Offset(1).Value = _
-                  data_range.Cells(i, j).Value * 1000
-            ElseIf Split(data_range.Cells(i, 1).Offset(, -1).Text, &quot;(&quot;)(1) = _
-              &quot;Million Dollars)&quot; Then
-                Sheets(data).Cells(1, 3).End(xlDown).Offset(1).Value = _
-                data_range.Cells(i, j).Value * 1000000
-            Else
-                GoTo err_break2
-            End If
-        End If
-    Next j
-Next i
-
-GoTo endsub
-
-err_break1:
-
-MsgBox &quot;Select either sheet T1 or T2 to run the macro&quot;
-
-GoTo endsub
-
-err_break2:
-
-MsgBox &quot;Something is wrong with &quot; &amp; data_range.Cells(i, 1).Offset(, -1).Text
-
-endsub:
-
-End Sub</code></pre>
-</div>
-<p>Perform this transformation on both the <em>Import</em> and <em>Export</em> data to generate two separate tables. Note that in the event of ‘na’, the data is not copied over, which will result in ‘null’ returns when the data is visualised in Tableau. This should be the correct interpretation for the missing data at this point, as we cannot assume that missing data means that there was no trade at all (which is indicated by a zero in the data).</p>
+<p>As the dataset used is the same as Data Viz Makeover 1, we follow the same steps noted in <a href="https://arnoldndx.netlify.app/posts/2021-05-22-my-1st-post/">Data Viz Makeover 1</a> to prepare the data.</p>
 <h2 id="visualisation-in-tableau">3.2 Visualisation in Tableau</h2>
 <p>Once the data has been prepared, we now move to Tableau to execute the proposed visualisation.</p>
 <table>
@@ -2368,12 +2312,12 @@ End Sub</code></pre>
 </table>
 <p>And now you’re done!</p>
 <h1 id="new-visualisation-and-observations">4. New Visualisation and Observations</h1>
-<p>Executing the visualisation described in Section 2, we produce the following graphic. The workbook can also be accessed on Tableau Public <a href="https://public.tableau.com/app/profile/arnold.ng6549/viz/datavizmakeover1/Dashboard1">here</a>.</p>
-<center>
-<figure>
-<img src="new_viz.png" alt="New data visualisation" /><figcaption aria-hidden="true">New data visualisation</figcaption>
-</figure>
-</center>
+<p>Executing the visualisation described in Section 2, we produce the following graphic. The workbook can also be accessed on Tableau Public <a href="https://public.tableau.com/app/profile/arnold.ng6549/viz/datavizmakeover2_16242002706520/Dashboard1">here</a>.</p>
+<div class="layout-chunk" data-layout="l-body">
+<html>
+<div class='tableauPlaceholder' id='viz1624200890209' style='position: relative'><noscript><a href='#'><img alt='Dashboard 1 ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;da&#47;datavizmakeover2_16242002706520&#47;Dashboard1&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='datavizmakeover2_16242002706520&#47;Dashboard1' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;da&#47;datavizmakeover2_16242002706520&#47;Dashboard1&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1624200890209');                    var vizElement = divElement.getElementsByTagName('object')[0];                    if ( divElement.offsetWidth > 800 ) { vizElement.style.width='100%';vizElement.style.height=(divElement.offsetWidth*0.75)+'px';} else if ( divElement.offsetWidth > 500 ) { vizElement.style.width='100%';vizElement.style.height=(divElement.offsetWidth*0.75)+'px';} else { vizElement.style.width='100%';vizElement.style.height='1577px';}                     var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
+</html>
+</div>
 <p>From the visualisation, we can make the following observations:</p>
 <ul>
 <li><p><strong>It becomes immediately apparent that the original visualisation was incorrect in identifying Singapore’s top 6 merchandise trade relationships.</strong> It should be Indonesia and not Japan which is included in the top 6.</p></li>
@@ -2381,7 +2325,7 @@ End Sub</code></pre>
 <li><p><strong>Our top 5 trade relationships account for nearly half of our merchandise trade by volume, and our top 20 account for about 90% of our merchandise trade.</strong> This shows that while we are fairly well diversified geographically speaking, Singapore is still quite dependent on a handful of major trading partners.</p></li>
 <li><p><strong>We are a net exporter.</strong> We export about 10% more merchandise (by value) than we import, which indicates that we run a trade surplus with regards to merchandise. Some of our trade relationships feature a significant trade imbalance (e.g. trade with Hong kong runs a signficant surplus, while trade with Taiwan runs a significant deficit). This information, along with information types of merchandise exported, services trade data, etc. are important to inform our exchange rate policy, which has significant impacts on our trade.</p></li>
 </ul>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->
 </div>
