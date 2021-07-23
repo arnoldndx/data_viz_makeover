@@ -1,0 +1,6 @@
+1. The article details are: SOURCE; TITLE; AUTHOR; LOCATION; PUBLISHED; NOTE
+2. PUBLISHED dates have two date formats: "YYYY/MM/DD" & "D MMMM YYYY" & "D MMMM YYYY HHMM" & "DDMMMM YYYY"
+3. AUTHOR can be multiple, separtor is ","
+4. Some LOCATION is wrongly matched with text, mostly "TITLE:....."
+5. Some PUBLISHED includes AUTHOR in the text as "Author Name \n YYYY/MM/DD" or "By Author Name \n DD MMMM YYYY" or "By Author Name \n YYYY/MM/DD"
+6. Some articles' text start with "CITY, Country - ", we could use this for location

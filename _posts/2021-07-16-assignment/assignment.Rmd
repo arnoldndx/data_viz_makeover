@@ -1,0 +1,240 @@
+---
+title: "Assignment"
+description: |
+  A short description of the post.
+author:
+  - name: Arnold Ng
+    url: {}
+date: 07-16-2021
+output:
+  distill::distill_article:
+    self_contained: false
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      tidy.opts=list(width.cutoff=40),
+                      tidy=TRUE)
+```
+
+```{r echo=FALSE}
+#load relevant libraries
+packages = c('DT','ggiraph','plotly','tidyverse',
+             'tidytext','readtext','lubridate','formatR',
+             'gbutils')
+
+for (p in packages){
+  if(!require(p,character.only = T)){
+    install.packages(p)
+  }
+  library(p, character.only = T)
+}
+
+setwd("~/0. SMU MITB/9. ISSS608 Visual Analytics & Applications/arnoldndx/data_viz_makeover/_posts/2021-07-16-assignment")
+```
+
+# 1. Task
+
+The task is to use visual analytics to examine text data comprising:
+* news articles; 
+* GAStech employee email headers;
+* GAStech employee records; and
+* GAStech employee resumes
+
+in order to answer the following questions.
+
+**QUESTION 1:** Characterize the news data sources provided. Which are primary sources and which are derivative sources? What are the relationships between the primary and derivative sources? Please limit your answer to 8 images and 300 words.
+
+**QUESTION 2:** Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. Give examples. Please limit your answer to 6 images and 500 words.
+
+**QUESTION 3:** Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives. Provide evidence for these relationships. Please limit your answer to 6 images and 400 words.
+
+# 2. Data Preparation
+
+Firstly, we will need to clean up and process the data into data tables to facilitate analysis. We will use a combination of R tools and manual inspection/editing to clean up the data.
+
+There are three main datasets that will need to be processed and tidied up. The first set comprises the news articles. They will have to be collected into a data table for analysis, with key article details such as title, author, publish date, etc. extracted to facilitate analysis. The second set of data comprises the employee relationships to each other, as well as entities such as countries, organisations, persons outside GAStech, etc. The third and final set of data comprises email headers for two weeks worth of emails, along with labels of the type of emails. 
+
+## 2.1. News Articles
+
+There is noise in the news article data, which includes incosistent line breaks, inconsistent formatting of article details such as dates, author names, etc., and inconsistent details provided per article. This has to be taken into account in processing the article data.
+
+### **Step 2.1.1:** Combine articles into single table for checking
+
+We first begin by combining the article data into a single table to facilitate checks. We get the easy part out of the way and clean up the line breaks, by replacing all double line breaks with single line breaks with the code below.
+
+```{r eval=FALSE}
+articles <- readtext("MC 1/News Articles/*")
+
+for (row in 1:nrow(articles)){
+  #clean up the text of breaks
+  while (str_detect(articles[row,'text'],'\n ')){
+    articles[row,'text'] <- str_replace_all(articles[row,'text'],"\n ","\n")
+  }
+  while (str_detect(articles[row,'text'],'\n\n')){
+    articles[row,'text'] <- str_replace_all(articles[row,'text'],"\n\n","\n")
+  }
+}
+```
+
+We then export the data for manual cleaning (i.e. edit the text directly in the csv file).
+
+```{r eval=FALSE}
+#export data for manual cleaning
+write.csv(articles,"article_consol.csv")
+```
+
+### **Step 2.1.2:** Load cleaned data and convert to article data into analysable dataframe
+
+We now begin the task of converting the data into an analysable format. 
+
+First, we perform a first pass manual check of all the article text and manually clean up the data into a consistent format.Then we load in the cleaned data.
+
+```{r}
+#load in cleaned data
+article_data <- read.csv("article_consol_edit.csv")
+```
+
+Next, we convert the article data into an analysable dataframe to with the relevant article information separated out. We also ensure that the published dates are properly formatted for analysis.
+
+```{r}
+#create dataframe to store article data
+article_df <- data_frame(doc_id = rep('',nrow(article_data)),
+                         source = rep('',nrow(article_data)),
+                         title = rep('',nrow(article_data)),
+                         author = rep('',nrow(article_data)),
+                         location = rep('',nrow(article_data)),
+                         published = rep('',nrow(article_data)),
+                         text = rep('',nrow(article_data)))
+
+#define the article details to be captured
+headers <- c('source',
+             'title',
+             'author',
+             'location',
+             'published')
+
+for (row in 1:nrow(article_data)){
+  article_text <- str_split(article_data$text[row],'\n')
+  article_df$doc_id[row] <- article_data$doc_id[row]
+  for (i in 1:length(article_text[[1]])){
+    detail <- str_trim(str_split_fixed(article_text[[1]][i],":",2))
+    # check if any of the string headers corresponds to article details, otherwise treat as body text
+    if (tolower(detail[1]) %in% headers){
+      #some of the article text has "LOCATION:", especially police blotter transcripts, this is to make sure only the first instance of location is used.
+      if (article_df[row,tolower(detail[1])] == ''){
+        #for multiple authors store authors as list so that they can be referenced separately
+        if (tolower(detail[1]) == 'author'){
+          article_df[row,tolower(detail[1])] <- list(str_trim(str_split(detail[2],',')))
+        } else if (tolower(detail[1]) == 'published'){
+          date <- str_replace_all(str_replace_all(detail[2],'  ',' '),',','')
+          article_df[row,'published'] <- date
+        }
+        article_df[row,tolower(detail[1])] <- str_trim(detail[2])
+      } else {
+        #concatenate body text
+        article_df[row,'text'] <- paste(article_df[row,'text'],article_text[[1]][i], sep='\n')
+      }
+    } else {
+      #concatenate body text
+      article_df[row,'text'] <- paste(article_df[row,'text'],article_text[[1]][i], sep='\n')
+    }
+  } 
+}
+
+#convert the published dates to dates
+article_df$published <- as.Date(parse_date_time(article_df$published,c('dmy','mdy','ymd')))
+
+```
+And we're done with the news article data!
+
+## 2.2. GAStech employee relationships
+
+## 2.3. Email headers
+
+# 3. Solutions (Approach & Answers)
+
+Using the prepared data, we now answer the questions with the help of some meaningful visualisations.
+
+## 3.1. Question 1
+_Characterize the news data sources provided. Which are primary sources and which are derivative sources? What are the relationships between the primary and derivative sources? Please limit your answer to 8 images and 300 words._
+
+### 3.1.1. Solution Approach and Data Wrangling
+
+There are two ways to detect derivative sources:
+1. presence of other news source name in the text (e.g. quoting or crediting another news source)
+2. same title and author as another article (e.g. reprinting or republishing a previous article from another news source)
+
+**STEP 1:** Identify presence of other news source name
+
+For the first approach, we will establish a listing of all news sources, and then check each article text for the presence of other news sources. We will use the detects to generate an adjacency matrix to visualise the links between articles. The primary source will be the news source quoted and the derivative source is the article doing the quoting.
+
+```{r}
+news_sources <- c(unique(article_df$source))
+
+#append one column for each news source to article df to establish an adjacency matrix
+article_df[news_sources] <- NA
+
+#mark TRUE whenever mentions of other news sources are detected
+for (row in 1:nrow(article_df)){
+  for (news_source in news_sources){
+    if (article_df[row,'source'] != news_source){
+      article_df[row,news_source] <- str_detect(article_df[row,'text'], news_source)
+    }
+    else{article_df[row,news_source] <- FALSE}
+  }
+}
+```
+
+**STEP 2:** Identify articles with same title and author
+
+First we compile a list of unique title-author combinations and extract the earliest publication of each combination. This list will be the basis for comparison against all the articles. Any articles published after the earliest publication is necessarily a reprint of the primary source. 
+
+```{r}
+#establish a list of unique article title/author combinations and record the earliest publish date and the source
+
+article_df_grouped <-  article_df %>%
+  group_by(title,author) %>%
+  arrange(published, by_group = TRUE) %>%
+  summarise(doc_id = first(doc_id), 
+            published = first(published), 
+            news_source = first(source),
+            count = n(), #count the number of times the title-author combo been published
+            all_source = list(unique(source)), #count the number of news sources that have used this article
+            text = first(text)) %>%
+  filter(length(all_source)>1)
+
+datatable(article_df_grouped[,1:7])
+```
+One quick observation that we can make is that there are several instances where articles share titles (i.e. exact match) with one combination with an author's name indicated but another combination without an author's name. This indicates that there might be situations either where one source is plagarising another or authors with one publication are re-using their work with another publication without using their bylines. We examine the text of the respective articles.
+
+```{r echo=FALSE}
+#filter the article data to just those with identical titles
+
+article_df_repeats <- article_df_grouped %>%
+  group_by(title) %>%
+  summarise(title = title,
+            text = text,
+            author = author,
+            news_source = news_source,
+            published = published) %>%
+  filter(n()>1)
+
+datatable(article_df_repeats, options = list(pageLength = 2))
+```
+Briefly, from comparing some of the text in the above table, it appears that Petrus Gerhard is recycling articles that he writes for _Homeland Illumination_ for _All News Today_, and often on the same day. We will investigate this further using text analytics.
+
+### 3.1.2. Answer
+
+
+## 3.2. QUESTION 2
+_Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. Give examples. Please limit your answer to 6 images and 500 words._
+
+
+## 3.3. QUESTION 3 
+_Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives. Provide evidence for these relationships. Please limit your answer to 6 images and 400 words._
+
+
+
