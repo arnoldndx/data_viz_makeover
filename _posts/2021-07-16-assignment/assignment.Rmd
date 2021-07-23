@@ -1,7 +1,7 @@
 ---
 title: "Assignment"
 description: |
-  A short description of the post.
+  My approach and solution to Mini Challenge 1 of the VAST Challenge 2021.
 author:
   - name: Arnold Ng
     url: {}
@@ -23,7 +23,7 @@ knitr::opts_chunk$set(echo = TRUE,
 #load relevant libraries
 packages = c('DT','ggiraph','plotly','tidyverse',
              'tidytext','readtext','lubridate','formatR',
-             'gbutils')
+             'textstem')
 
 for (p in packages){
   if(!require(p,character.only = T)){
@@ -224,7 +224,24 @@ article_df_repeats <- article_df_grouped %>%
 
 datatable(article_df_repeats, options = list(pageLength = 2))
 ```
-Briefly, from comparing some of the text in the above table, it appears that Petrus Gerhard is recycling articles that he writes for _Homeland Illumination_ for _All News Today_, and often on the same day. We will investigate this further using text analytics.
+Briefly, from comparing some of the text in the above table, it appears that Petrus Gerhard is recycling articles that he writes for _Homeland Illumination_ for _All News Today_ (simply shortening the article and changing one or two words for _All News Today_), and often on the same day. Marcella Trapani and Eva Thayer are doing similar at _International News_ while officially writing for _Kronos Star_. We will investigate this further using text analytics to quantify the similarity between articles.
+
+Firstly, we will convert our corpus of articles into a document-term matrix, using [text frequency - inverse document frequency (TF-IDF)](https://www.tidytextmining.com/tfidf.html) to fill in the values. TF-IDF is used because it supresses words that appear commonly across all documents through the inverse document frequency term. This eliminates the need to specify stopwords to remove from the corpus, which is tedious and might not be too accurate as some stopwords also depend on the unique characteristics of each corpus. We will also lemmatize the words using the [textstem](https://rdrr.io/cran/textstem/) package to better capture the meaning of each document by converting various forms of words to their root word (e.g. 'running', 'ran', and 'run' will be reduced to 'run'). Another approach is stemming, where t   he ends of words are truncated based on heuristics to remove derivational and inflectional affixes (e.g. -s, -ed, -es, -ing, -tion). Past research ([di Nanzio, Vezzani, 2018](http://ceur-ws.org/Vol-2253/paper45.pdf)) has shown that lemmatization and stemming are comparable in terms of performance. We will go with lemmatization for this project because the output are base words, which are more understandable.
+
+```{r}
+dtm <- article_df[,c('doc_id','text')] %>%
+  unnest_tokens(word,text) 
+
+#lemmatize words
+dtm$word <- lemmatize_words(dtm$word)
+
+dtm <- dtm %>%
+  count(doc_id, word, sort=TRUE)
+
+
+```
+
+
 
 ### 3.1.2. Answer
 
@@ -235,6 +252,8 @@ _Characterize any biases you identify in these news sources, with respect to the
 
 ## 3.3. QUESTION 3 
 _Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives. Provide evidence for these relationships. Please limit your answer to 6 images and 400 words._
+
+# References
 
 
 
