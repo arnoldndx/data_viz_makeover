@@ -14,16 +14,24 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,
+knitr::opts_chunk$set(echo = T,
                       tidy.opts=list(width.cutoff=40),
                       tidy=TRUE)
+```
+
+```{css, echo=FALSE}
+#format table captions
+caption {
+  font-size: 20px;
+  font-weight: bold;
+}
 ```
 
 ```{r echo=FALSE}
 #load relevant libraries
 packages = c('DT','ggiraph','plotly','tidyverse',
              'tidytext','readtext','lubridate','formatR',
-             'textstem')
+             'textstem', 'tm', 'slam')
 
 for (p in packages){
   if(!require(p,character.only = T)){
@@ -32,12 +40,13 @@ for (p in packages){
   library(p, character.only = T)
 }
 
+#set working directory to reference data files
 setwd("~/0. SMU MITB/9. ISSS608 Visual Analytics & Applications/arnoldndx/data_viz_makeover/_posts/2021-07-16-assignment")
 ```
-
 # 1. Task
 
 The task is to use visual analytics to examine text data comprising:
+
 * news articles; 
 * GAStech employee email headers;
 * GAStech employee records; and
@@ -99,7 +108,7 @@ article_data <- read.csv("article_consol_edit.csv")
 
 Next, we convert the article data into an analysable dataframe to with the relevant article information separated out. We also ensure that the published dates are properly formatted for analysis.
 
-```{r}
+```{r, message = FALSE, warnings = FALSE}
 #create dataframe to store article data
 article_df <- data_frame(doc_id = rep('',nrow(article_data)),
                          source = rep('',nrow(article_data)),
@@ -164,12 +173,14 @@ _Characterize the news data sources provided. Which are primary sources and whic
 ### 3.1.1. Solution Approach and Data Wrangling
 
 There are two ways to detect derivative sources:
+
 1. presence of other news source name in the text (e.g. quoting or crediting another news source)
 2. same title and author as another article (e.g. reprinting or republishing a previous article from another news source)
 
 **STEP 1:** Identify presence of other news source name
 
 For the first approach, we will establish a listing of all news sources, and then check each article text for the presence of other news sources. We will use the detects to generate an adjacency matrix to visualise the links between articles. The relationship will be defined as follows:
+
 1. The primary source will be the news source quoted
 2. The derivative source is the article doing the quoting
 3. The relationship is defined as "Quoting"
@@ -189,6 +200,8 @@ for (row in 1:nrow(article_df)){
     else{article_df[row,news_source] <- FALSE}
   }
 }
+
+#convert the adjacency matrix into a list of edges (primary doc_id, primary source, derivative doc_id, derivative source, edge type)
 ```
 
 **STEP 2:** Identify articles with same title and author
@@ -212,6 +225,8 @@ article_df_grouped <-  article_df %>%
 
 datatable(article_df_grouped[,c(1:5,7:9)],
           class = 'cell-border stripe',
+          caption = 'TABLE 1. List of unique article title-author combinations with number of repeats and sources that have published',
+          rownames = FALSE,
           colnames = c("Unique title",
                        "Unique author",
                        "First Document ID",
@@ -221,9 +236,7 @@ datatable(article_df_grouped[,c(1:5,7:9)],
                        "All sources that have published this article",
                        "All articles with this title-author combination"))
 ```
-**
-
-One quick observation that we can make is that there are several instances where articles share titles (i.e. exact match) with one combination with an author's name indicated but another combination without an author's name. This indicates that there might be situations either where one source is plagarising another or authors with one publication are re-using their work with another publication without using their bylines. 
+One quick observation that we can make is that there are several instances where articles share titles (i.e. exact match) with one combination with an author's name indicated but another combination without an author's name. This indicates that there might be situations either where one source is plagarising another or authors with one publication are re-using their work with another publication without using their bylines.
 
 To further investigate this we shall extract the text of all articles which share the same title for comparison. We should note that if there is only one news source that has used this title (even if there are multiple articles), then this article could be a topic header for a developing story, with periodic updates being provided. In such a case, we ignore it as it does not show a primary-derivative source relationship.
 
@@ -274,6 +287,7 @@ for (i in 1:nrow(article_df_repeats)){
 
 datatable(article_df_repeats[,c(1,5:10)], 
           class = 'cell-border stripe',
+          caption = 'TABLE 2. Articles with identical titles for inspection',
           options = list(pageLength = 1,
                          height = 450,
                          width = 800),
@@ -289,27 +303,47 @@ datatable(article_df_repeats[,c(1,5:10)],
     formatStyle(1:5, 'text-align' = 'left') 
 ```
 
-```{r echo=FALSE}
-#filter the article data to just those with identical titles
-
-article_df_repeats <- article_df_grouped %>%
-  group_by(title) %>%
-  summarise(title = title,
-            text = text,
-            author = author,
-            news_source = news_source,
-            published = published
-            ) %>%
-  filter(n()>1)
-
-datatable(article_df_repeats, 
-          class = 'cell-border stripe',
-          options = list(pageLength = 2))
+```{r,eval = F, echo=F}
+#export data for manual cleaning
+write.csv(article_df_repeats[,c(1,5:10)],"article_compare.csv")
 ```
-Briefly, from comparing some of the text in the above table, it appears that Petrus Gerhard is recycling articles that he writes for _Homeland Illumination_ for _All News Today_ (simply shortening the article and changing one or two words for _All News Today_), and often on the same day. Marcella Trapani and Eva Thayer are doing similar at _International News_ while officially writing for _Kronos Star_. In these cases, we will record the relationship between the articles as follows:
-1. The primary source is the longer article which bears the author's name.
-2. The derivative source is the shorter article which is published without an author specified.
-3. The relationship is defined as "Shadow Author"
+
+Briefly, from comparing some of the text in the above table, it appears that Petrus Gerhard is recycling articles that he writes for _Homeland Illumination_ for _All News Today_ (simply shortening the article and changing one or two words for _All News Today_), and often on the same day. Marcella Trapani and Eva Thayer are doing similar at _International News_ while officially writing for _Kronos Star_. There are many other cases, indicating that this "Shadow Author" phenomenon is probably much more widespread than previously expected. This warrants deeper investigation!!
+
+To detect "Shadow Author" relationships, we will borrow a page from plagarism checker algorithms. We will use a simple substring matching approach to carry out this analysis. Simply put the method involves the following:
+
+1. **Breakdown each document into a series of n-grams.** n should be a medium length, ~5 to 10 words. Too long, and it won't capture situations where authors change one or two words. Too short, and we would miss word patterns. For this case, we choose n = 6.
+2. **Calculate a similarity score**, where 1 indicates that the entirety of document A is found in document B. The score is given by:
+$$
+similarity (\text{doc A to doc B}) = \frac{\text{no. of n-grams in doc A found in doc B}}{\text{total number of n-grams in doc A}}
+$$
+3. Noting that the score is directional (i.e. similarity of A to B may be 1, but if B is a longer document then similarity of B to A will be < 1), we should designate the shorter document (higher similarity score) as the derivative source and the longer document (lower similarity score) as the primary. Not all forms of "Shadow Author" relationships will be so neat. From our manual review of the articles in the above sections, it is clear that some shadow authors "mix and match" paragraphs around. For simplicity, we will define a "Shadow Author" relationship based on the following:
+    + **Links between documents are defined as a similarity score of >0.1.** This allows for some coincidental overlaps in n-grams.
+    + **One of the similarity scores between two articles is >0.5** (i.e. more than half of the n-grams in doc A can be found in doc B) indicates that one of the articles might have been "shadow authored".
+    + **Document with the higher score will be designated as the derivative.**
+    + **Document with the lower score will be designated as the primary.**
+    + Where multiple documents are linked (similarity score >0.1), the **document with the lowest average similarity score will be designated as the primary source**, and all others will be designated as derivative.
+
+```{r}
+ngram_fp <- article_df[,c('doc_id','text')] %>%
+  unnest_tokens(n-gram,text, token = "ngrams", n = 6)
+
+ngram_fp$count = 1
+
+#get a list of doc lengths (i.e. num of n-grams in the doc), we will use this to normalise similarity scores later
+doc_length <- ngram_fp %>%
+  group_by(doc_id) %>%
+  summarise(doc_id = first(doc_id),
+            doc_length = n())
+
+#create 'n-gram'-document matrix
+ndm <-ngram_fp %>%
+  cast_tdm(n-gram,doc_id,count)
+
+fp_similarity_mat <- crossprod_simple_triplet_matrix(ndm)/col_sums(ndm)
+```
+
+
 
 
 
@@ -345,7 +379,11 @@ dtm <- dtm %>%
 dtm <- dtm %>%
   bind_tf_idf(word,doc_id, n)
 
+tdm <-dtm %>%
+  cast_tdm(word,doc_id,tf_idf)
 
+library(slam)
+cosine_dist_mat <- crossprod_simple_triplet_matrix(tdm)/(sqrt(col_sums(tdm^2) %*% t(col_sums(tdm^2))))
 
 ```
 ### 3.2.2. Answer
