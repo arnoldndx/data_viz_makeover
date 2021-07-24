@@ -195,7 +195,7 @@ for (row in 1:nrow(article_df)){
 
 First we compile a list of unique title-author combinations and extract the earliest publication of each combination. This list will be the basis for comparison against all the articles. Any articles published after the earliest publication is necessarily a reprint of the primary source. 
 
-```{r}
+```{r, layout="l-body-outset"}
 #establish a list of unique article title/author combinations and record the earliest publish date and the source
 
 article_df_grouped <-  article_df %>%
@@ -227,7 +227,7 @@ One quick observation that we can make is that there are several instances where
 
 To further investigate this we shall extract the text of all articles which share the same title for comparison. We should note that if there is only one news source that has used this title (even if there are multiple articles), then this article could be a topic header for a developing story, with periodic updates being provided. In such a case, we ignore it as it does not show a primary-derivative source relationship.
 
-```{r echo=FALSE}
+```{r, layout="l-body-outset", fig.width = 20}
 #filter the article data to just those with identical titles, we will use this repeats table to extract the relevant article texts
 
 article_df_repeats <- article_df %>%
@@ -246,27 +246,27 @@ for (i in 1:nrow(article_df_repeats)){
   all_doc <- article_df_repeats$all_docs[i]
   for (j in 1:length(all_doc[[1]])){
     article_df_repeats[i,coladd+j] <- paste('DOC_ID: ',
-                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['doc_id'],
+                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['doc_id'][[1]],
                                             '\n',
                                             #source
                                             'SOURCE: ',
-                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['source'],
+                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['source'][[1]],
                                             '\n',
                                             #author
                                             'AUTHOR: ',
-                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['author'],
+                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['author'][[1]],
                                             '\n',
                                             #published date
                                             'PUBLISHED: ',
-                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['published'],
+                                            format(filter(article_df,article_df$doc_id == all_doc[[1]][j])['published'][[1]],'%d-%m-%Y'),
                                             '\n',
                                             #location
                                             'LOCATION: ',
-                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['location'],
+                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['location'][[1]],
                                             '\n',
                                             '\n',
                                             #text
-                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['text'],
+                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['text'][[1]],
                                             '\n'
                                             )
   }
@@ -274,15 +274,19 @@ for (i in 1:nrow(article_df_repeats)){
 
 datatable(article_df_repeats[,c(1,5:10)], 
           class = 'cell-border stripe',
-          options = list(pageLength = 5,
-                         height = 450),
+          options = list(pageLength = 1,
+                         height = 450,
+                         width = 800),
+          rownames = FALSE,
           colnames = c("Unique title",
                        "First article",
                        "Second article",
                        "Third article",
                        "Fourth article",
                        "Fifth article",
-                       "Sixth article"))
+                       "Sixth article")) %>%
+    formatStyle(1:5, 'vertical-align'='top') %>% 
+    formatStyle(1:5, 'text-align' = 'left') 
 ```
 
 ```{r echo=FALSE}
