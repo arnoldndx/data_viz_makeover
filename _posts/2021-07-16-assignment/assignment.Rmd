@@ -169,7 +169,10 @@ There are two ways to detect derivative sources:
 
 **STEP 1:** Identify presence of other news source name
 
-For the first approach, we will establish a listing of all news sources, and then check each article text for the presence of other news sources. We will use the detects to generate an adjacency matrix to visualise the links between articles. The primary source will be the news source quoted and the derivative source is the article doing the quoting.
+For the first approach, we will establish a listing of all news sources, and then check each article text for the presence of other news sources. We will use the detects to generate an adjacency matrix to visualise the links between articles. The relationship will be defined as follows:
+1. The primary source will be the news source quoted
+2. The derivative source is the article doing the quoting
+3. The relationship is defined as "Quoting"
 
 ```{r}
 news_sources <- c(unique(article_df$source))
@@ -198,17 +201,89 @@ First we compile a list of unique title-author combinations and extract the earl
 article_df_grouped <-  article_df %>%
   group_by(title,author) %>%
   arrange(published, by_group = TRUE) %>%
-  summarise(doc_id = first(doc_id), 
+  summarise(first_doc_id = first(doc_id), 
             published = first(published), 
             news_source = first(source),
+            text = first(text),
+            #the below details are for further analysis
             count = n(), #count the number of times the title-author combo been published
-            all_source = list(unique(source)), #count the number of news sources that have used this article
-            text = first(text)) %>%
-  filter(length(all_source)>1)
+            all_source = list(unique(source)), #list the number of news sources that have used this article
+            all_doc = list(doc_id)) #list all the documents that share this article-author combination
 
-datatable(article_df_grouped[,1:7])
+datatable(article_df_grouped[,c(1:5,7:9)],
+          class = 'cell-border stripe',
+          colnames = c("Unique title",
+                       "Unique author",
+                       "First Document ID",
+                       "First published date",
+                       "First published news source",
+                       "Repeat count",
+                       "All sources that have published this article",
+                       "All articles with this title-author combination"))
 ```
-One quick observation that we can make is that there are several instances where articles share titles (i.e. exact match) with one combination with an author's name indicated but another combination without an author's name. This indicates that there might be situations either where one source is plagarising another or authors with one publication are re-using their work with another publication without using their bylines. We examine the text of the respective articles.
+**
+
+One quick observation that we can make is that there are several instances where articles share titles (i.e. exact match) with one combination with an author's name indicated but another combination without an author's name. This indicates that there might be situations either where one source is plagarising another or authors with one publication are re-using their work with another publication without using their bylines. 
+
+To further investigate this we shall extract the text of all articles which share the same title for comparison. We should note that if there is only one news source that has used this title (even if there are multiple articles), then this article could be a topic header for a developing story, with periodic updates being provided. In such a case, we ignore it as it does not show a primary-derivative source relationship.
+
+```{r echo=FALSE}
+#filter the article data to just those with identical titles, we will use this repeats table to extract the relevant article texts
+
+article_df_repeats <- article_df %>%
+  group_by(title) %>%
+  summarise(count_articles = n(),
+            num_unique_sources = length(list(unique(source))[[1]]), #count the number of news sources that have used this article title
+            all_docs = list(doc_id) #list all the documents that share this article-author combination
+            ) %>%
+  filter(num_unique_sources > 1)
+
+coladd <- ncol(article_df_repeats)
+
+article_df_repeats[(coladd+1):(coladd+max(article_df_repeats$num_unique_sources))] <- ''
+
+for (i in 1:nrow(article_df_repeats)){
+  all_doc <- article_df_repeats$all_docs[i]
+  for (j in 1:length(all_doc[[1]])){
+    article_df_repeats[i,coladd+j] <- paste('DOC_ID: ',
+                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['doc_id'],
+                                            '\n',
+                                            #source
+                                            'SOURCE: ',
+                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['source'],
+                                            '\n',
+                                            #author
+                                            'AUTHOR: ',
+                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['author'],
+                                            '\n',
+                                            #published date
+                                            'PUBLISHED: ',
+                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['published'],
+                                            '\n',
+                                            #location
+                                            'LOCATION: ',
+                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['location'],
+                                            '\n',
+                                            '\n',
+                                            #text
+                                            filter(article_df,article_df$doc_id == all_doc[[1]][j])['text'],
+                                            '\n'
+                                            )
+  }
+}
+
+datatable(article_df_repeats[,c(1,5:10)], 
+          class = 'cell-border stripe',
+          options = list(pageLength = 5,
+                         height = 450),
+          colnames = c("Unique title",
+                       "First article",
+                       "Second article",
+                       "Third article",
+                       "Fourth article",
+                       "Fifth article",
+                       "Sixth article"))
+```
 
 ```{r echo=FALSE}
 #filter the article data to just those with identical titles
@@ -219,14 +294,39 @@ article_df_repeats <- article_df_grouped %>%
             text = text,
             author = author,
             news_source = news_source,
-            published = published) %>%
+            published = published
+            ) %>%
   filter(n()>1)
 
-datatable(article_df_repeats, options = list(pageLength = 2))
+datatable(article_df_repeats, 
+          class = 'cell-border stripe',
+          options = list(pageLength = 2))
 ```
-Briefly, from comparing some of the text in the above table, it appears that Petrus Gerhard is recycling articles that he writes for _Homeland Illumination_ for _All News Today_ (simply shortening the article and changing one or two words for _All News Today_), and often on the same day. Marcella Trapani and Eva Thayer are doing similar at _International News_ while officially writing for _Kronos Star_. We will investigate this further using text analytics to quantify the similarity between articles.
+Briefly, from comparing some of the text in the above table, it appears that Petrus Gerhard is recycling articles that he writes for _Homeland Illumination_ for _All News Today_ (simply shortening the article and changing one or two words for _All News Today_), and often on the same day. Marcella Trapani and Eva Thayer are doing similar at _International News_ while officially writing for _Kronos Star_. In these cases, we will record the relationship between the articles as follows:
+1. The primary source is the longer article which bears the author's name.
+2. The derivative source is the shorter article which is published without an author specified.
+3. The relationship is defined as "Shadow Author"
 
-Firstly, we will convert our corpus of articles into a document-term matrix, using [text frequency - inverse document frequency (TF-IDF)](https://www.tidytextmining.com/tfidf.html) to fill in the values. TF-IDF is used because it supresses words that appear commonly across all documents through the inverse document frequency term. This eliminates the need to specify stopwords to remove from the corpus, which is tedious and might not be too accurate as some stopwords also depend on the unique characteristics of each corpus. We will also lemmatize the words using the [textstem](https://rdrr.io/cran/textstem/) package to better capture the meaning of each document by converting various forms of words to their root word (e.g. 'running', 'ran', and 'run' will be reduced to 'run'). Another approach is stemming, where t   he ends of words are truncated based on heuristics to remove derivational and inflectional affixes (e.g. -s, -ed, -es, -ing, -tion). Past research ([di Nanzio, Vezzani, 2018](http://ceur-ws.org/Vol-2253/paper45.pdf)) has shown that lemmatization and stemming are comparable in terms of performance. We will go with lemmatization for this project because the output are base words, which are more understandable.
+
+
+
+### 3.1.2. Answer
+
+
+## 3.2. QUESTION 2
+_Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. Give examples. Please limit your answer to 6 images and 500 words._
+
+##3.2.1. Solution Approach and Data Wrangling
+
+Visualising bias will require more in depth analysis of the article texts. We will used frequency-based analysis to characterise the articles.
+
+```{r}
+#define key words
+
+
+```
+
+Firstly, we will convert our corpus of articles into a document-term matrix, using [text frequency - inverse document frequency](https://www.tidytextmining.com/tfidf.html) (TF-IDF) to fill in the values. TF-IDF is used because it supresses words that appear commonly across all documents through the inverse document frequency term. This eliminates the need to specify stopwords to remove from the corpus, which is tedious and might not be too accurate as some stopwords also depend on the unique characteristics of each corpus. We will also lemmatize the words using the [textstem](https://rdrr.io/cran/textstem/) package to better capture the meaning of each document by converting various forms of words to their root word (e.g. 'running', 'ran', and 'run' will be reduced to 'run'). Another approach is stemming, where t   he ends of words are truncated based on heuristics to remove derivational and inflectional affixes (e.g. -s, -ed, -es, -ing, -tion). Past research ([di Nanzio, Vezzani, 2018](http://ceur-ws.org/Vol-2253/paper45.pdf)) has shown that lemmatization and stemming are comparable in terms of performance. We will go with lemmatization for this project because the output are base words, which are more understandable.
 
 ```{r}
 dtm <- article_df[,c('doc_id','text')] %>%
@@ -238,20 +338,21 @@ dtm$word <- lemmatize_words(dtm$word)
 dtm <- dtm %>%
   count(doc_id, word, sort=TRUE)
 
+dtm <- dtm %>%
+  bind_tf_idf(word,doc_id, n)
+
+
 
 ```
-
-
-
-### 3.1.2. Answer
-
-
-## 3.2. QUESTION 2
-_Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. Give examples. Please limit your answer to 6 images and 500 words._
+### 3.2.2. Answer
 
 
 ## 3.3. QUESTION 3 
 _Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives. Provide evidence for these relationships. Please limit your answer to 6 images and 400 words._
+
+### 3.3.1. Solution Approach and Data Wrangling
+
+### 3.3.2. Answer
 
 # References
 
