@@ -783,7 +783,7 @@ ggplot(edge_list_bysrc_aft2005,
 ## 3.2. QUESTION 2
 _Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. Give examples. Please limit your answer to 6 images and 500 words._
 
-##3.2.1. Solution Approach and Data Wrangling
+## 3.2.1. Solution Approach and Data Wrangling
 
 Visualising bias will require more in depth analysis of the article texts. We will used frequency-based analysis to characterise the articles for bias detection. First, we need to identify entities which we wish to study, namely:
 
@@ -856,7 +856,7 @@ dtm <-dtm %>%
   cast_dtm(doc_id,word,tf_idf)
 ```
 
-We plot a wordcloud to compare the common words used when each of the three entities are mentioned in an article.
+We plot a wordcloud (see Figure 5 below) to compare the common words used when each of the three entities are mentioned in an article. From the word cloud, it can be seen that the words commonly used when talking about the government or GAStech are largely neutral, while those used in describing POK have more negative connotations (e.g. violence, vandalism, assault).
 
 ```{r, echo=F, layout="l-body-outset", fig.width = 5}
 batch1 <- col_means(dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$POK]),])
@@ -885,6 +885,14 @@ comparison.cloud(t(batch),
                  colors = brewer.pal(8, "Dark2"))
 
 ```
+However, we now need to characterise the individual words in order to capture sentiment, so that we can apply an analysis on each news source to identify bias. Our approach will be as follows:
+
+1. Extract and manually annotate the vocabulary to characterise words as follows:
+    - Negative to POK (e.g. terrorist, vandalism, riot, loot)
+    - Positive to POK (e.g. activist, )
+
+
+
 ```{r}
 #extract vocabulary, only interested in words with high tf-idf scores
 vocabulary <- c()
@@ -895,6 +903,8 @@ for (i in 1:ncol(dtm)){
   }
 }
 ```
+
+
 
 ```{r,eval = F, echo=F}
 #export vocabulary for manual annotation
