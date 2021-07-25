@@ -34,7 +34,8 @@ caption {
 packages = c('DT','ggiraph','plotly','tidyverse',
              'tidytext','readtext','lubridate','formatR',
              'textstem', 'tm', 'slam', 'ggalluvial',
-             'ggrepel')
+             'ggrepel','wordcloud','RColorBrewer','graphics',
+             'gbutils','grid','gridExtra')
 
 for (p in packages){
   if(!require(p,character.only = T)){
@@ -814,15 +815,23 @@ for (i in 1:nrow(article_df)){
     for (k in 1:length(keywords[[j]])){
       if (str_detect(text,str_to_lower(keywords[[j]][k]))){
         article_df[i,7+j] <- TRUE
+      } else {
+        if (isNA(article_df[i,7+j])){
+          article_df[i,7+j] <- FALSE
+        }
       }
     }
   }
 }
 ```
 
+Now, we turn our attention to the sentiment analysis.
 
+First, we will convert our corpus of articles into a document-term matrix, using [text frequency - inverse document frequency](https://www.tidytextmining.com/tfidf.html) (TF-IDF) to fill in the values. TF-IDF is used because it supresses words that appear commonly across all documents through the inverse document frequency term. This eliminates the need to specify stopwords to remove from the corpus, which is tedious and might not be too accurate as some stopwords also depend on the unique characteristics of each corpus. 
 
-Firstly, we will convert our corpus of articles into a document-term matrix, using [text frequency - inverse document frequency](https://www.tidytextmining.com/tfidf.html) (TF-IDF) to fill in the values. TF-IDF is used because it supresses words that appear commonly across all documents through the inverse document frequency term. This eliminates the need to specify stopwords to remove from the corpus, which is tedious and might not be too accurate as some stopwords also depend on the unique characteristics of each corpus. We will also lemmatize the words using the [textstem](https://rdrr.io/cran/textstem/) package to better capture the meaning of each document by converting various forms of words to their root word (e.g. 'running', 'ran', and 'run' will be reduced to 'run'). Another approach is stemming, where t   he ends of words are truncated based on heuristics to remove derivational and inflectional affixes (e.g. -s, -ed, -es, -ing, -tion). Past research ([di Nanzio, Vezzani, 2018](http://ceur-ws.org/Vol-2253/paper45.pdf)) has shown that lemmatization and stemming are comparable in terms of performance. We will go with lemmatization for this project because the output are base words, which are more understandable.
+We will also lemmatize the words using the [textstem](https://rdrr.io/cran/textstem/) package to better capture the meaning of each document by converting various forms of words to their root word (e.g. 'running', 'ran', and 'run' will be reduced to 'run'). Another approach is stemming, where t   he ends of words are truncated based on heuristics to remove derivational and inflectional affixes (e.g. -s, -ed, -es, -ing, -tion). Past research ([di Nanzio, Vezzani, 2018](http://ceur-ws.org/Vol-2253/paper45.pdf)) has shown that lemmatization and stemming are comparable in terms of performance. We will go with lemmatization for this project because the output are base words, which are more understandable.
+
+We will also remove numerics so that we can avoid cluttering the document-term matrix and zoom in on word meanings to analyse sentiment.
 
 ```{r}
 dtm <- article_df[,c('doc_id','text')] %>%
@@ -831,19 +840,106 @@ dtm <- article_df[,c('doc_id','text')] %>%
 #lemmatize words
 dtm$word <- lemmatize_words(dtm$word)
 
+#establish word counts
 dtm <- dtm %>%
   count(doc_id, word, sort=TRUE)
 
+#remove numerics
+dtm <- dtm[-which(grepl("^[[:digit:]]+", dtm$word)),]
+
+#calculate tf-idf
 dtm <- dtm %>%
   bind_tf_idf(word,doc_id, n)
 
-tdm <-dtm %>%
-  cast_tdm(word,doc_id,tf_idf)
+#cast dtm
+dtm <-dtm %>%
+  cast_dtm(doc_id,word,tf_idf)
+```
 
-library(slam)
-cosine_dist_mat <- crossprod_simple_triplet_matrix(tdm)/(sqrt(col_sums(tdm^2) %*% t(col_sums(tdm^2))))
+We plot a wordcloud to compare the common words used when each of the three entities are mentioned in an article.
+
+```{r, echo=F, layout="l-body-outset", fig.width = 600}
+batch1 <- col_means(dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$POK]),])
+batch2 <- col_means(dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$Govt]),])
+batch3 <- col_means(dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$GAStech]),])
+
+batch <- rbind(batch1,
+               batch2,
+               batch3)
+
+rownames(batch) <- entities
+
+layout(matrix(c(1, 2), nrow=2), heights=c(1, 4))
+par(mar=rep(0, 4))
+plot.new()
+text(x=0.5, y=0.5, "FIGURE 5. Comparison wordcloud for various entity mentions")
+comparison.cloud(t(batch),
+                 max.words=300,
+                 random.order=FALSE,
+                 rot.per=0.35,
+                 scale = c(2, 0.22),
+                 title.size = 1.5,
+                 colors = brewer.pal(8, "Dark2"))
 
 ```
+```{r}
+#extract vocabulary, only interested in words with high tf-idf scores
+vocabulary <- c()
+
+for (i in 1:ncol(dtm)){
+  if (max(dtm[,i])>0.1){
+    vocabulary <- c(vocabulary,colnames(dtm)[i])
+  }
+}
+```
+
+```{r,eval = F, echo=F}
+#export vocabulary for manual annotation
+write.csv(vocabulary,"vocab.csv")
+```
+
+```{r eval=F}
+toPlot1 <- dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$POK]),]
+a <- wordcloud(words = colnames(toPlot1),
+          freq = col_means(toPlot1), #we use col means to get the average tf-idf, if we sum, stopwords will appear alot
+          min.freq = 0.2,
+          max.words=200,
+          random.order=FALSE,
+          rot.per=0.35,
+          scale = c(2, 0.1),
+          colors = brewer.pal(8, "Dark2"),
+          main = 'Protectors of Kronos')
+
+toPlot2 <- dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$Govt]),]
+b <- wordcloud(words = colnames(toPlot2),
+          freq = col_means(toPlot2), #we use col means to get the average tf-idf, if we sum, stopwords will appear alot
+          min.freq = 0.2,
+          max.words=200,
+          random.order=FALSE,
+          rot.per=0.35,
+          scale = c(2, 0.1),
+          colors=brewer.pal(8, "Dark2"),
+          main = 'Kronos Government')
+
+
+toPlot3 <- dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$GAStech]),]
+c <- wordcloud(words = colnames(toPlot3),
+          freq = col_means(toPlot3), #we use col means to get the average tf-idf, if we sum, stopwords will appear alot
+          min.freq = 0.2,
+          max.words=200,
+          random.order=FALSE,
+          rot.per=0.35,
+          scale = c(2, 0.1),
+          colors=brewer.pal(8, "Dark2"),
+          main = 'GAStech')
+
+#lay <- rbind(c(1,2),
+#             c(3,4))
+#grid.arrange(a,b,c,c, layout_matrix = lay)
+
+```
+
+
 ### 3.2.2. Answer
 
 
