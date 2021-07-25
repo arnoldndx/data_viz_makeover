@@ -935,17 +935,24 @@ ref_dict <- Terms(dtm)
 #populate the ref dictionary
 for (i in 1:length(entities)){
   new_row <- rep(0,length(ref_dict))
-  for (j in 1:nrow(vocab_annotated)){
-    new_row[which(ref_dict == vocab_annotated[j,1])] <- vocab_annotated[j,i+1] 
+  if (i == 1){
+    for (j in 1:nrow(vocab_annotated)){
+      new_row[which(ref_dict == vocab_annotated[j,1])] <- vocab_annotated[j,i+1] 
+    }
+  } else {
+    for (j in 1:nrow(vocab_annotated)){
+      new_row[which(colnames(ref_dict) == vocab_annotated[j,1])] <- vocab_annotated[j,i+1] 
+    }
   }
   ref_dict <- rbind(ref_dict,new_row)
+  #set column names to be the terms
+  colnames(ref_dict) <- Terms(dtm)
 }
 
 #remove the first row
 ref_dict <- ref_dict[-1,]
 
-#set column names to be the terms
-colnames(ref_dict) <- Terms(dtm)
+#set row names to be the entities
 rownames(ref_dict) <- entities
 
 ```
@@ -1017,9 +1024,9 @@ sent_scores <- pivot_longer(sent_scores,
 
 ### 3.2.2. Answer
 
-Based on the results in Figure 6 below, we find that most news sources are more neutral in stance. In general there is greater variability in favorability for GAStech and POK, while favorability ratings for the government tend to be clustered in a tight band, indicating that most news sources tend to report objectively or slightly favorably on the government. This is perhaps to be expected, as the government is usually able to exert some influence over news media in a country. 
+Based on the results in Figure 6 below, we find that most news sources are more neutral in stance (i.e. clustered around the centre of the sentiment ratings). In general there is greater variability in favorability for POK, while favorability ratings for the government tend to be clustered in a tighter band, indicating that most news sources tend to report objectively or slightly favorably on the government. This is perhaps to be expected, as the government is usually able to exert some influence over news media in a country. 
 
-It is noted that _Modern Rubicon_ is the most vehemently anti-government news source, while it is also the most pro-POK news source. This is not surprising, and _Modern Rubicon_ could have links with the POK organisation and senior leadership.
+It is noted that _All News Today_ is the most vehemently anti-government and anti-GAStech news source, while it is also the most pro-POK news source. This is not surprising, and _All News Today_ could have links with the POK organisation and senior leadership.
 
 
 ```{r, echo=F}
@@ -1047,12 +1054,12 @@ ggplot(sent_scores,
         axis.text.x = element_text(size = 10, face = "bold"),
         axis.title.x = element_text(size = 12, face = "bold"))
 ```
-To validate our findings, let's perform a wordcloud of _Modern Rubicon's_ articles regarding each entity and see what kind of words they tend to use regarding each entity.
+To validate our findings, let's perform a wordcloud of _All News Today's_ articles regarding each entity and see what kind of words they tend to use regarding each entity. From the word cloud, we can see that _All News Today_ tends to report alot on corruption and kleptocracy when reporting on GAStech or the government, while it tends to portray POK as a grassroots organisation supported by the people.
 
-```{r, echo=F, layout="l-body-outset", fig.width = 5}
-batch1 <- dtm_pk_bysrc['Modern Rubicon',]
-batch2 <- dtm_gv_bysrc['Modern Rubicon',]
-batch3 <- dtm_ga_bysrc['Modern Rubicon',]
+```{r, echo=F}
+batch1 <- dtm_pk_bysrc['All News Today',]
+batch2 <- dtm_gv_bysrc['All News Today',]
+batch3 <- dtm_ga_bysrc['All News Today',]
 
 batch <- rbind(batch1,
                batch2,
@@ -1066,13 +1073,13 @@ plot.new()
 text(x=0.5, 
      y=0.5,
      cex = 0.6,
-     "FIGURE 7. Comparison wordcloud for various entity mentions for Modern Rubicon")
+     "FIGURE 7. Comparison wordcloud for various entity mentions for All News Today")
 comparison.cloud(t(batch),
-                 max.words=140,
+                 max.words=200,
                  random.order=FALSE,
                  rot.per=0.35,
-                 scale = c(2, 0.24),
-                 title.size = 1.5,
+                 scale = c(2.5, 0.6),
+                 title.size = 1.2,
                  colors = brewer.pal(8, "Dark2"))
 
 ```
