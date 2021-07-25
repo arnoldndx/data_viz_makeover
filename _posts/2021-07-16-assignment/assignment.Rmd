@@ -10,13 +10,15 @@ output:
   distill::distill_article:
     self_contained: false
     toc: true
-    toc_depth: 2
+    toc_depth: 3
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = T,
                       tidy.opts=list(width.cutoff=40),
-                      tidy=TRUE)
+                      tidy=TRUE,
+                      message = FALSE, 
+                      warnings = FALSE)
 ```
 
 ```{css, echo=FALSE}
@@ -31,7 +33,8 @@ caption {
 #load relevant libraries
 packages = c('DT','ggiraph','plotly','tidyverse',
              'tidytext','readtext','lubridate','formatR',
-             'textstem', 'tm', 'slam')
+             'textstem', 'tm', 'slam', 'ggalluvial',
+             'ggrepel')
 
 for (p in packages){
   if(!require(p,character.only = T)){
@@ -227,9 +230,6 @@ edge_list_quote <- edge_list_quote %>%
 #reorder the columns
 edge_list_quote <- edge_list_quote[,c(4,3,1,2,5)]
 
-#rename the rows
-rownames(edge_list_quote) <- edge_list_quote$derivative_doc_id
-
 #remove adjacency matrix from article_df
 article_df <- article_df[,1:7]
 
@@ -380,36 +380,48 @@ ndm <-ngram_fp %>%
 
 #calculate the similarity score
 fp_similarity_mat <- crossprod_simple_triplet_matrix(ndm)/col_sums(ndm)
+
+#create a reference similarity matrix
+fp_similiarity_mat_ref <- fp_similarity_mat
+
 ```
+
+The raw similiarity scores are not quite useful yet, we need to extract insight by determining which are the primary and derivative sources. 
+
+One interesting point to note, is the the n-gram method will be extremely useful in helping us to identify primary sources for the quoting relationships. This is because a quote from another article will show up as an n-gram similarity score (i.e. a few sentences or paragraphs matching the primary source). If the similarity score is very close to 1, then the article may be a reprint of an older article.
+
+We incoprporate this insight into our analysis and use the n-gram similarity score to fill in the primary sources for our quoting relationships. A single article may quote multiple sources, so the rules for defining primary and derivative source is not the same as those for shadow authoring. We will instead check off all articles from the quoted news source that have some similarity with the derivative article (i.e. the article doing the quoting).
 
 ```{r}
 #utility code to reset the edge_list_quote
 edge_list_quote$primary_doc_id <- ''
-rownames(edge_list_quote) <- edge_list_quote$derivative_doc_id
 
 #clean up the matrix, we only want real relationships, not coincidental matches
 for (i in 1:ncol(fp_similarity_mat)){
   #sparse matrix, so only zoom in on those with similarity score
   for (j in which(fp_similarity_mat[,i] >0)){
     #check if the doc has quoted another article
-    if (rownames(fp_similarity_mat)[j] %in% edge_list_quote$derivative_doc_id){
+    if (rownames(fp_similarity_mat)[j] %in% unique(edge_list_quote$derivative_doc_id)){
       #check if the corresponding article source matches the quote source, if not, then no relationship
       #print(paste('Column: ',colnames(fp_similarity_mat)[i]))
       #print(paste('Row: ',rownames(fp_similarity_mat)[j]))
-      if (article_df[colnames(fp_similarity_mat)[i],][2][[1]] == edge_list_quote[rownames(fp_similarity_mat)[j],][2][[1]]){
+      if (article_df[colnames(fp_similarity_mat)[i],][2][[1]] == edge_list_quote[which(edge_list_quote$derivative_doc_id == rownames(fp_similarity_mat)[j])[1],][2][[1]]){
         #if so, update the edge_list_quote with the primary source doc_id,
         #check if there's already a doc_id in there, sometimes quote more than one source
-        if (edge_list_quote[which(rownames(edge_list_quote) == rownames(fp_similarity_mat)[j]),'primary_doc_id'] != ''){
-          edge_list_quote[which(rownames(edge_list_quote) == rownames(fp_similarity_mat)[j]),'primary_doc_id'] <- paste(
-            edge_list_quote[which(rownames(edge_list_quote) == rownames(fp_similarity_mat)[j]),'primary_doc_id'],
-            ',',
-            colnames(fp_similarity_mat)[i])
+        if (edge_list_quote[which(edge_list_quote$derivative_doc_id == rownames(fp_similarity_mat)[j])[1],'primary_doc_id'] != ''){
+          new_row <- c(colnames(fp_similarity_mat)[i],
+                       edge_list_quote$primary_source[which(edge_list_quote$derivative_doc_id == rownames(fp_similarity_mat)[j])[1]],
+                       edge_list_quote$derivative_doc_id[which(edge_list_quote$derivative_doc_id == rownames(fp_similarity_mat)[j])[1]],
+                       edge_list_quote$derivative_source[which(edge_list_quote$derivative_doc_id == rownames(fp_similarity_mat)[j])[1]],
+                       #if similarity score is high, it means doc A is a reprint of doc B
+                       ifelse(fp_similarity_mat[j,i] > 0.7,'Reprint','Quoting'))
+          edge_list_quote <- rbind(edge_list_quote,new_row)
           } else {
-            edge_list_quote[which(rownames(edge_list_quote) == rownames(fp_similarity_mat)[j]),'primary_doc_id'] <- colnames(
+            edge_list_quote[which(edge_list_quote$derivative_doc_id == rownames(fp_similarity_mat)[j]),'primary_doc_id'] <- colnames(
               fp_similarity_mat)[i]
+            edge_list_quote[which(edge_list_quote$derivative_doc_id == rownames(fp_similarity_mat)[j]),'type'] <- ifelse(
+              fp_similarity_mat[j,i] > 0.7,'Reprint','Quoting')
           }
-          #reset the edge_list_quote rownames to derivative doc_id for referencing, it auto reverts when u load in data
-          rownames(edge_list_quote) <- edge_list_quote$derivative_doc_id
           #no longer any need to reflect similarity if source is quoted, as it is now a "shadow" situation 
           fp_similarity_mat[j,i] <- 0
           fp_similarity_mat[i,j] <- 0
@@ -438,9 +450,7 @@ for (i in 1:ncol(fp_similarity_mat)){
       }
   }
 }
-
 ```
-
 ```{r}
 #now we extract the relationships and label them, only the primary source's row will be labelled with a "1" for the corresponding derivative sources.
 #first, copy the similarity matrix
@@ -509,41 +519,264 @@ edge_list_shadow$type <- 'Shadow Authoring'
 
 #reorder the columns
 edge_list_shadow <- edge_list_shadow[,c(1,3,2,4,5)]
+
+#remove shadow authoring relationships where the primary and derivative news sources are the same
+#self referencing within a news source should not be considered shadow authoring
+edge_list_shadow <- edge_list_shadow[-which(edge_list_shadow$primary_source == edge_list_shadow$derivative_source),]
 ```
 
+Having completed the edge list for "Shadow Authoring" relationships, we now turn our attention to tidying up the "Quoting" edge list. We then merge together the edge lists and prepare to generate a Sankey diagram to visualise the relationships.
 
 ```{r}
-#tidy up the edge list for quoting
+#tidy up the edge list and prepare graphics
+#remove the remaining article in edge list quote with no primary source, 
+#it might be a report about another news agency rather than a quote
+edge_list <- rbind(edge_list_quote[-which(edge_list_quote$primary_doc_id == ''),],edge_list_shadow)
+```
 
-for (i in 1:nrow(edge_list_quote)){
-  #check if there is more than one primary_doc_id, one article can quote many sources
-  if (length(str_split(edge_list_quote[i,'primary_doc_id'],',')[[1]]) > 1){
-    for (j in 1:length(str_split(edge_list_quote[i,'primary_doc_id'],',')[[1]])){
-      new_row <- c(str_trim(str_split(edge_list_quote[i,'primary_doc_id'],',')[[1]][j]),
-                   edge_list_quote$primary_source[i],
-                   edge_list_quote$derivative_doc_id[i],
-                   edge_list_quote$derivative_source[i],
-                   edge_list_quote$type[i])
-      #print(new_row)
-      edge_list_quote <- rbind(edge_list_quote,new_row)
+```{r}
+#expand edge list with article details
+#add the additional edge details
+edge_list$primary_year <- ''
+edge_list$primary_author <- ''
+edge_list$derivative_year <- ''
+edge_list$derivative_author <- ''
+edge_list$similarity <- ''
+
+for (i in 1:nrow(edge_list)){
+  #extract primary news source from article_df
+  edge_list$primary_year[i] <- year(article_df[edge_list$primary_doc_id[i],][6][[1]])
+  edge_list$primary_author[i] <- article_df[edge_list$primary_doc_id[i],][4][[1]]
+  #extract derivative news source from article_df
+  edge_list$derivative_year[i] <- year(article_df[edge_list$derivative_doc_id[i],][6][[1]])
+  edge_list$derivative_author[i] <- article_df[edge_list$derivative_doc_id[i],][4][[1]]
+  #extract the similarity score
+  edge_list$similarity[i] <- fp_similiarity_mat_ref[which(rownames(fp_similiarity_mat_ref) == edge_list$derivative_doc_id[i]),
+                                                 which(colnames(fp_similiarity_mat_ref) == edge_list$primary_doc_id[i])]
+  
+  #if primary and derivative author are not null and are the same, the author is not hiding
+  #change relationship to reprint
+  if ((edge_list$primary_author[i] != '')){
+    if (edge_list$primary_author[i] == edge_list$derivative_author[i]){
+      edge_list$type[i] = 'Reprint'
+    }
+  } else {
+    #if the primary has no author and the derivative has an author, then the shadow authoring relationship should be inverted
+    #the author could have added details in the shadow article not included in the original
+    if (edge_list$derivative_author[i] != ''){
+      #store the primary values
+      derivative_doc_id <- edge_list$primary_doc_id[i]
+      derivative_source <- edge_list$primary_source[i]
+      derivative_year <- edge_list$primary_year[i]
+      derivative_author <- edge_list$primary_author[i]
+      
+      #set primary values as the previously derivative values
+      edge_list$primary_doc_id[i] <- edge_list$derivative_doc_id[i]
+      edge_list$primary_source[i] <- edge_list$derivative_source[i]
+      edge_list$primary_year[i] <- edge_list$derivative_year[i]
+      edge_list$primary_author[i] <- edge_list$derivative_author[i]
+      
+      #set the derivative values as the previously primary values
+      edge_list$derivative_doc_id[i] <- derivative_doc_id
+      edge_list$derivative_source[i] <- derivative_source
+      edge_list$derivative_year[i] <- derivative_year
+      edge_list$derivative_author[i] <- derivative_author
     }
   }
 }
 
-#remove the multi-valued rows
-edge_list_quote <- edge_list_quote[-which(str_detect(edge_list_quote$primary_doc_id,',')),]
+#drop those where primary year > derivative year
+edge_list <- edge_list[-which(edge_list$primary_year > edge_list$derivative_year),]
+
 ```
+
+We then prepare the data for visualisation.
 
 ```{r}
-#tidy up the edge list and prepare graphics
-edge_list <- rbind(edge_list_quote,edge_list_shadow)
+#summarise data by news source
+edge_list_bysrc <- edge_list %>%
+  group_by(primary_source,derivative_source,type) %>%
+  summarise(freq = n())
 
+#summarise data by author
+edge_list_byauth <- edge_list %>%
+  group_by(primary_author,derivative_author,type) %>%
+  summarise(freq = n())
 
+#split data before and after 2005
+edge_list_bysrc_bef2005 <- edge_list %>%
+  filter(derivative_year < 2005) %>%
+  group_by(primary_source,derivative_source,type) %>%
+  summarise(freq = n())
+
+edge_list_bysrc_aft2005 <- edge_list %>%
+  filter(derivative_year > 2004) %>%
+  group_by(primary_source,derivative_source,type) %>%
+  summarise(freq = n())
 ```
 
-
-
 ### 3.1.2. Answer
+
+```{r echo=F}
+#define nudge vector for labelling
+nudge1 <- rep(-1,length(unique(edge_list$primary_source)))
+nudge2 <- rep(1,length(unique(edge_list$derivative_source)))
+
+nudge <- c(nudge1,nudge2)
+
+#define the colours for the relationship type
+quote <- "deepskyblue3"
+reprint <- "gold2"
+shadow <- "firebrick3"
+
+#generate the sankey
+ggplot(edge_list_bysrc,
+       aes(y = freq, axis1 = primary_source, axis2 = derivative_source)) +
+  geom_alluvium(aes(fill = type), 
+                width = 1/12,
+                alpha = 0.3, 
+                knot.pos = 0.3) +
+  geom_stratum(width = 1/12, fill = "grey50", color = "white") +
+  #geom_label(stat = "stratum", aes(label = after_stat(stratum))) +
+  scale_fill_manual('Type of Relationship',values  = c(quote,reprint,shadow)) +
+  scale_color_manual(values = c(quote,reprint,shadow)) +
+  scale_x_discrete(expand = c(.6, 0),
+                   limits = c("Primary", "Derivative")) +
+  ggrepel::geom_text_repel(
+    stat = "stratum", 
+    aes(label = after_stat(stratum)),
+    size = 3, 
+    direction = "y", 
+    nudge_x = nudge
+  ) +
+  ggtitle("FIGURE 1. Primary and Derivative Relationships by News Source and Type") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 12, face = "bold"),
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = 'bottom')
+```
+From Figure 1 above, it can be seen that the bulk of the similarity between sources is due to "Shadow Authoring", where authors write for multiple news organisations without using their names. It is perhaps not surprising, given that Kronos is a very small country with a population of only 783,305 people, but supporting a media industry of 29 different news sources. From Figure 1, it appears that _News Online Today_ is the biggest beneficiary of such shadow authoring, with primary sources ranging from _Homeland Illumination_, _International Times_, _Kronos Star_, _The Abila Post_, and _The World_. _News Online Today_ appears to also be the largest single news agency in Kronos by article volume (see Figure 2 below), which probably indicates that they may also be one of the mainstream news sources in Kronos, which is why they are attractive to shadow writers.
+
+```{r, echo = F}
+source_vol <- article_df %>%
+  group_by(source) %>%
+  summarise(count = n())
+
+ggplot(source_vol,
+       aes(x = source,
+           y = count)) +
+  geom_bar(stat = 'identity',
+           fill = 'deepskyblue4') +
+  ggtitle('FIGURE 2. Article Volume of various News Agencies') +
+  ylab('Article Count') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.title.x = element_blank())
+```
+Assessing the types of relationships by author (see Figure 3 below), we find that most of the authors exclusively use shadow authoring, with only Petrus' articles being reprinted with his name in other sources. Note that there are many articles without author names.
+
+```{r, echo = F}
+#define nudge vector for labelling
+nudge1 <- rep(-1,length(unique(edge_list$primary_author)))
+nudge2 <- rep(1,length(unique(edge_list$derivative_author)))
+
+nudge <- c(nudge1,nudge2)
+
+#generate the sankey
+ggplot(edge_list_byauth,
+       aes(y = freq, axis1 = primary_author, axis2 = derivative_author)) +
+  geom_alluvium(aes(fill = type), 
+                width = 1/12,
+                alpha = 0.3, 
+                knot.pos = 0.3) +
+  geom_stratum(width = 1/12, fill = "grey50", color = "white") +
+  scale_fill_manual('Type of Relationship',values  = c(quote,reprint,shadow)) +
+  scale_color_manual(values = c(quote,reprint,shadow)) +
+  scale_x_discrete(expand = c(.6, 0),
+                   limits = c("Primary", "Derivative")) +
+  ggrepel::geom_text_repel(
+    stat = "stratum", 
+    aes(label = after_stat(stratum)),
+    size = 3, 
+    direction = "y", 
+    nudge_x = nudge
+  ) +
+  ggtitle("FIGURE 3. Primary and Derivative Relationships by Author and Type") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 12, face = "bold"),
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = 'bottom')
+```
+
+One possible reason for this reluctance to explicitly declare their authorship could be that authors are deliberatly attempting to use a more reputable news source (e.g. News Online Today) to spread their message without compromising said news source by associating openly with it. Since 2005 (based on materials provided), the Protectors of Kronos (POK) have gotten increasingly militant and government crackdowns have similarly stepped up. Considering the political situation, we can compare the evolving dynamics of primary-derivative source relationships before 2005 and after 2005. From Figures 4a and 4b below, we can see that while shadow authoring relationships have always been prevalent, after 2005, no authors have published articles in other news sources under their own names any more.
+
+```{r echo=F}
+#define nudge vector for labelling
+nudge1 <- rep(-1,length(unique(edge_list_bysrc_bef2005$primary_source)))
+nudge2 <- rep(1,length(unique(edge_list_bysrc_bef2005$derivative_source)))
+
+nudge <- c(nudge1,nudge2)
+
+#generate the sankey
+ggplot(edge_list_bysrc_bef2005,
+       aes(y = freq, axis1 = primary_source, axis2 = derivative_source)) +
+  geom_alluvium(aes(fill = type), 
+                width = 1/12,
+                alpha = 0.3, 
+                knot.pos = 0.3) +
+  geom_stratum(width = 1/12, fill = "grey50", color = "white") +
+  scale_fill_manual('Type of Relationship',values  = c(quote,reprint,shadow)) +
+  scale_color_manual(values = c(quote,reprint,shadow)) +
+  scale_x_discrete(expand = c(.6, 0),
+                   limits = c("Primary", "Derivative")) +
+  ggrepel::geom_text_repel(
+    stat = "stratum", 
+    aes(label = after_stat(stratum)),
+    size = 3, 
+    direction = "y", 
+    nudge_x = nudge
+  ) +
+  ggtitle("FIGURE 4a. Primary and Derivative Relationships by News Source and Type \n(before 2005)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 12, face = "bold"),
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = 'top')
+```
+```{r echo=F}
+#define nudge vector for labelling
+nudge1 <- rep(-1,length(unique(edge_list_bysrc_aft2005$primary_source)))
+nudge2 <- rep(1,length(unique(edge_list_bysrc_aft2005$derivative_source)))
+
+nudge <- c(nudge1,nudge2)
+
+#generate the sankey
+ggplot(edge_list_bysrc_aft2005,
+       aes(y = freq, axis1 = primary_source, axis2 = derivative_source)) +
+  geom_alluvium(aes(fill = type), 
+                width = 1/12,
+                alpha = 0.3, 
+                knot.pos = 0.3) +
+  geom_stratum(width = 1/12, fill = "grey50", color = "white") +
+  guides(fill = 'none') +
+  scale_fill_manual('Type of Relationship',values  = c(shadow)) +
+  scale_color_manual(values = c(shadow)) +
+  scale_x_discrete(expand = c(.6, 0),
+                   limits = c("Primary", "Derivative")) +
+  ggrepel::geom_text_repel(
+    stat = "stratum", 
+    aes(label = after_stat(stratum)),
+    size = 3, 
+    direction = "y", 
+    nudge_x = nudge
+  ) +
+  ggtitle("FIGURE 4b. Primary and Derivative Relationships by News Source and Type \n(after 2005)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 12, face = "bold"),
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank())
+```
 
 
 ## 3.2. QUESTION 2
