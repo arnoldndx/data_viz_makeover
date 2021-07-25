@@ -887,68 +887,177 @@ comparison.cloud(t(batch),
 ```
 However, we now need to characterise the individual words in order to capture sentiment, so that we can apply an analysis on each news source to identify bias. Our approach will be as follows:
 
-1. Extract and manually annotate the vocabulary to characterise words as follows:
-    - Negative to POK (e.g. terrorist, vandalism, riot, loot)
-    - Positive to POK (e.g. activist, )
+1. **Extract and manually annotate the vocabulary** to characterise words as follows:
+    - Negative to POK (e.g. terrorist, vandalism, riot, loot, criminal)
+    - Positive to POK (e.g. activist, protest, demonstration, peaceful)
+    - Negative to Government (e.g. favoritism, corruption, kleptocracy)
+    - Positive to Government (e.g. investment, development)
+    - Negative to GAStech (e.g. toxic, acidic, contamination)
+2. For each set of entity mentions:
+    - **Summarise the document-term matrix by news source**, taking the column means to get the average sentiment of the articles produced by the news source mentioning said entity.
+    - **Multiply the td-idf score for each word by the annotated word sentiment score** (-1 for negative, 0 for neutral, 1 for positive).
+    - **Sum the sentiment scores for all words for each news source.** That will be the sentiment score for the news source.
+    - **Normalise the sentiment scores, by computing the z-statistic.** This is to ensure that the relative favorability of a news source for each entity is comparable across entities
+3. **Visualise the relative favorability of each news source with respect to each entity.**
 
-
-
-```{r}
+```{r, eval = F}
 #extract vocabulary, only interested in words with high tf-idf scores
 vocabulary <- c()
 
 for (i in 1:ncol(dtm)){
-  if (max(dtm[,i])>0.1){
+  if (max(dtm[,i])>0.05){
     vocabulary <- c(vocabulary,colnames(dtm)[i])
   }
 }
-```
 
-
-
-```{r,eval = F, echo=F}
 #export vocabulary for manual annotation
 write.csv(vocabulary,"vocab.csv")
 ```
 
-```{r eval=F}
-toPlot1 <- dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$POK]),]
-a <- wordcloud(words = colnames(toPlot1),
-          freq = col_means(toPlot1), #we use col means to get the average tf-idf, if we sum, stopwords will appear alot
-          min.freq = 0.2,
-          max.words=200,
-          random.order=FALSE,
-          rot.per=0.35,
-          scale = c(2, 0.1),
-          colors = brewer.pal(8, "Dark2"),
-          main = 'Protectors of Kronos')
+After manual annotation, we will create a reference dictionary with the sentiment tagged to each word for data wrangling.
 
-toPlot2 <- dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$Govt]),]
-b <- wordcloud(words = colnames(toPlot2),
-          freq = col_means(toPlot2), #we use col means to get the average tf-idf, if we sum, stopwords will appear alot
-          min.freq = 0.2,
-          max.words=200,
-          random.order=FALSE,
-          rot.per=0.35,
-          scale = c(2, 0.1),
-          colors=brewer.pal(8, "Dark2"),
-          main = 'Kronos Government')
+```{r}
+#load in annotated vocabulary
+vocab_annotated <- read.csv('vocab_annotated.csv')
+
+#remove old index
+vocab_annotated <- vocab_annotated[,2:5]
+
+#convert NA to 0
+vocab_annotated[is.na(vocab_annotated)] <- 0 
+
+#remove neutral words
+vocab_annotated <- vocab_annotated[which(row_sums(vocab_annotated[,2:4]) != 0),]
+
+#create a reference dictionary
+ref_dict <- Terms(dtm)
+
+#populate the ref dictionary
+for (i in 1:length(entities)){
+  new_row <- rep(0,length(ref_dict))
+  for (j in 1:nrow(vocab_annotated)){
+    new_row[which(ref_dict == vocab_annotated[j,1])] <- vocab_annotated[j,i+1] 
+  }
+  ref_dict <- rbind(ref_dict,new_row)
+}
+
+#remove the first row
+ref_dict <- ref_dict[-1,]
+
+#set column names to be the terms
+colnames(ref_dict) <- Terms(dtm)
+rownames(ref_dict) <- entities
+
+```
+We then compute the sentiment scores for each news source with respect to each entity.
+
+```{r}
+#first create subset dtms for each group of articles
+dtm_pk <- dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$POK]),]
+dtm_gv <- dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$Govt]),]
+dtm_ga <- dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$GAStech]),]
+
+#define function to summarise the dtm by news source (need to reference from the article_df table)
+summarise_bysrc <- function(dtm){
+  for (i in 1:length(news_sources)){
+    if (i == 1){
+      dtm_bysrc <- col_means(dtm[which(rownames(dtm) %in% article_df$doc_id[which(article_df$source == news_sources[i])]),])
+    } else {
+      dtm_bysrc <- rbind(dtm_bysrc,
+                         col_means(dtm[which(rownames(dtm) %in%
+                                               article_df$doc_id[which(article_df$source == news_sources[i])]),]))
+    }
+  }
+  #set the col and row names
+  colnames(dtm_bysrc) <- Terms(dtm)
+  rownames(dtm_bysrc) <- news_sources
+  
+  return(dtm_bysrc)
+}
+
+#perform summaries by news source
+dtm_pk_bysrc <- summarise_bysrc(dtm_pk)
+dtm_gv_bysrc <- summarise_bysrc(dtm_gv)
+dtm_ga_bysrc <- summarise_bysrc(dtm_ga)
+
+sent_scores <- data_frame(news_source = news_sources,
+                          POK = rep(0,length(news_sources)),
+                          Govt = rep(0,length(news_sources)),
+                          GAStech = rep(0,length(news_sources)))
+
+#define function to perform element-wise multiplication with the sentiment vocab
+get_sentiment <- function(dtm,ent,sent_scores){
+  for (i in 1:nrow(dtm)){
+    sent_scores[i,ent+1] <- sum(dtm_pk_bysrc[i,]*as.numeric(ref_dict[ent,]))
+  }
+  return(sent_scores)
+}
+
+#perform element-wise multiplication with the sentiment vocab
+sent_scores <- get_sentiment(dtm_pk_bysrc,1,sent_scores)
+sent_scores <- get_sentiment(dtm_gv_bysrc,2,sent_scores)
+sent_scores <- get_sentiment(dtm_ga_bysrc,3,sent_scores)
+
+#normalise the sent_scores
+for (i in 2:ncol(sent_scores)){
+  mean <- mean(as.numeric(as.matrix(sent_scores)[,i]))
+  sd <- sd(as.numeric(as.matrix(sent_scores)[,i]))
+  for (j in 1:nrow(sent_scores)){
+    sent_scores[j,i] <- (sent_scores[j,i] - mean)/(sd)
+  }
+}
+
+#pivot for plotting
+sent_scores <- pivot_longer(sent_scores,
+                            cols = !news_source,
+                            names_to = 'entity',
+                            values_to = 'sent_score')
+
+```
+
+### 3.2.2. Answer
+
+Based on the results below, 
+
+```{r echo=F}
+#generate the jitter stripchart
+ggplot(sent_scores, 
+       aes(x = entity,
+           y = sent_score)) +
+  geom_jitter(position = position_jitter(0.03), 
+              size = 3,
+              alpha = 0.5,
+              colour = 'deepskyblue4') +
+  scale_x_discrete(expand = c(.6, 0)) +
+  ggrepel::geom_text_repel(
+    stat = "identity", 
+    aes(label = news_source),
+    size = 3, 
+    direction = "y",
+    max.overlaps = 8,
+    nudge_x = -0.5) +
+  ggtitle('FIGURE 6. Relative favorability of News Sources with respect to Entity') +
+  ylab('More Favorable >>') +
+  xlab("Entity") +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.text.x = element_text(size = 10, face = "bold"),
+        axis.title.x = element_text(size = 12, face = "bold"))
+```
+
+```{r eval=F, echo=F}
 
 
-toPlot3 <- dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$GAStech]),]
-c <- wordcloud(words = colnames(toPlot3),
-          freq = col_means(toPlot3), #we use col means to get the average tf-idf, if we sum, stopwords will appear alot
-          min.freq = 0.2,
-          max.words=200,
-          random.order=FALSE,
-          rot.per=0.35,
-          scale = c(2, 0.1),
-          colors=brewer.pal(8, "Dark2"),
-          main = 'GAStech')
 
-#lay <- rbind(c(1,2),
-#             c(3,4))
-#grid.arrange(a,b,c,c, layout_matrix = lay)
+
+res.pca <- prcomp(as.matrix(dtm_pk_bysrc),scale=F)
+
+fviz_eig(res.pca)
+fviz_pca_ind(res.pca,
+             col.ind = "cos2", # Color by the quality of representation
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+             )
 
 ```
 
