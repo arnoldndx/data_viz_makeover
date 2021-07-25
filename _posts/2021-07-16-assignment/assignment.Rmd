@@ -202,7 +202,51 @@ for (row in 1:nrow(article_df)){
 }
 
 #convert the adjacency matrix into a list of edges (primary doc_id, primary source, derivative doc_id, derivative source, edge type)
+edge_list_quote <- article_df[,c(1:2,8:36)] %>%
+  pivot_longer(cols = !c(doc_id,source),
+               names_to = 'primary_source')
+
+#filter out the 'False' (i.e. no links)
+edge_list_quote <- edge_list_quote %>%
+  filter(value)
+
+#remove the 'value' column
+edge_list_quote <- edge_list_quote[,c(1:3)]
+
+#add the additional edge details
+edge_list_quote$primary_doc_id <- '' #no doc_ids for quoted source, unfortunately
+edge_list_quote$type <- 'Quoting'
+
+#rename the columns
+edge_list_quote <- edge_list_quote %>%
+  rename(
+    derivative_doc_id = doc_id,
+    derivative_source = source
+  )
+
+#reorder the columns
+edge_list_quote <- edge_list_quote[,c(4,3,1,2,5)]
+
+#rename the rows
+rownames(edge_list_quote) <- edge_list_quote$derivative_doc_id
+
+#remove adjacency matrix from article_df
+article_df <- article_df[,1:7]
+
+#rename the rows in article_df to doc_id for easier referencing
+rownames(article_df) <- article_df$doc_id
+
+datatable(edge_list_quote,
+          caption = 'TABLE 1. List of "Quoting" relationships',
+          rownames = F,
+          colnames = c("Primary doc ID",
+                       "Primary news source",
+                       "Derivative document ID",
+                       "Derivative news source",
+                       "Relationship Type"))
+
 ```
+There are only six quoting relationships detected in Step 1. We will see if we can derive more insight from the data in Step 2.
 
 **STEP 2:** Identify articles with same title and author
 
@@ -225,11 +269,11 @@ article_df_grouped <-  article_df %>%
 
 datatable(article_df_grouped[,c(1:5,7:9)],
           class = 'cell-border stripe',
-          caption = 'TABLE 1. List of unique article title-author combinations with number of repeats and sources that have published',
+          caption = 'TABLE 2. List of unique article title-author combinations with number of repeats and sources that have published',
           rownames = FALSE,
           colnames = c("Unique title",
                        "Unique author",
-                       "First Document ID",
+                       "First document ID",
                        "First published date",
                        "First published news source",
                        "Repeat count",
@@ -287,7 +331,7 @@ for (i in 1:nrow(article_df_repeats)){
 
 datatable(article_df_repeats[,c(1,5:10)], 
           class = 'cell-border stripe',
-          caption = 'TABLE 2. Articles with identical titles for inspection',
+          caption = 'TABLE 3. Articles with identical titles for inspection',
           options = list(pageLength = 1,
                          height = 450,
                          width = 800),
@@ -310,7 +354,7 @@ write.csv(article_df_repeats[,c(1,5:10)],"article_compare.csv")
 
 Briefly, from comparing some of the text in the above table, it appears that Petrus Gerhard is recycling articles that he writes for _Homeland Illumination_ for _All News Today_ (simply shortening the article and changing one or two words for _All News Today_), and often on the same day. Marcella Trapani and Eva Thayer are doing similar at _International News_ while officially writing for _Kronos Star_. There are many other cases, indicating that this "Shadow Author" phenomenon is probably much more widespread than previously expected. This warrants deeper investigation!!
 
-To detect "Shadow Author" relationships, we will borrow a page from plagarism checker algorithms. We will use a simple substring matching approach to carry out this analysis. Simply put the method involves the following:
+To detect "Shadow Author" relationships, we will borrow a page from plagarism checker algorithms. We will use a simple substring matching approach to carry out this analysis. Simply put, the method involves the following:
 
 1. **Breakdown each document into a series of n-grams.** n should be a medium length, ~5 to 10 words. Too long, and it won't capture situations where authors change one or two words. Too short, and we would miss word patterns. For this case, we choose n = 6.
 2. **Calculate a similarity score**, where 1 indicates that the entirety of document A is found in document B. The score is given by:
@@ -318,33 +362,184 @@ $$
 similarity (\text{doc A to doc B}) = \frac{\text{no. of n-grams in doc A found in doc B}}{\text{total number of n-grams in doc A}}
 $$
 3. Noting that the score is directional (i.e. similarity of A to B may be 1, but if B is a longer document then similarity of B to A will be < 1), we should designate the shorter document (higher similarity score) as the derivative source and the longer document (lower similarity score) as the primary. Not all forms of "Shadow Author" relationships will be so neat. From our manual review of the articles in the above sections, it is clear that some shadow authors "mix and match" paragraphs around. For simplicity, we will define a "Shadow Author" relationship based on the following:
-    + **Links between documents are defined as a similarity score of >0.1.** This allows for some coincidental overlaps in n-grams.
-    + **One of the similarity scores between two articles is >0.5** (i.e. more than half of the n-grams in doc A can be found in doc B) indicates that one of the articles might have been "shadow authored".
+    + **Links between documents are defined if at least one of the similarity scores is >0.5.** This allows for some coincidental overlaps in n-grams. >0.5 similarity score means more than half of the n-grams in doc A can be found in doc B, and indicates that one of the articles might have been "shadow authored".
     + **Document with the higher score will be designated as the derivative.**
     + **Document with the lower score will be designated as the primary.**
     + Where multiple documents are linked (similarity score >0.1), the **document with the lowest average similarity score will be designated as the primary source**, and all others will be designated as derivative.
 
 ```{r}
+#breakdown the article text into n-grams 'fingerprints'
 ngram_fp <- article_df[,c('doc_id','text')] %>%
   unnest_tokens(n-gram,text, token = "ngrams", n = 6)
 
 ngram_fp$count = 1
 
-#get a list of doc lengths (i.e. num of n-grams in the doc), we will use this to normalise similarity scores later
-doc_length <- ngram_fp %>%
-  group_by(doc_id) %>%
-  summarise(doc_id = first(doc_id),
-            doc_length = n())
-
 #create 'n-gram'-document matrix
 ndm <-ngram_fp %>%
   cast_tdm(n-gram,doc_id,count)
 
+#calculate the similarity score
 fp_similarity_mat <- crossprod_simple_triplet_matrix(ndm)/col_sums(ndm)
 ```
 
+```{r}
+#utility code to reset the edge_list_quote
+edge_list_quote$primary_doc_id <- ''
+rownames(edge_list_quote) <- edge_list_quote$derivative_doc_id
+
+#clean up the matrix, we only want real relationships, not coincidental matches
+for (i in 1:ncol(fp_similarity_mat)){
+  #sparse matrix, so only zoom in on those with similarity score
+  for (j in which(fp_similarity_mat[,i] >0)){
+    #check if the doc has quoted another article
+    if (rownames(fp_similarity_mat)[j] %in% edge_list_quote$derivative_doc_id){
+      #check if the corresponding article source matches the quote source, if not, then no relationship
+      #print(paste('Column: ',colnames(fp_similarity_mat)[i]))
+      #print(paste('Row: ',rownames(fp_similarity_mat)[j]))
+      if (article_df[colnames(fp_similarity_mat)[i],][2][[1]] == edge_list_quote[rownames(fp_similarity_mat)[j],][2][[1]]){
+        #if so, update the edge_list_quote with the primary source doc_id,
+        #check if there's already a doc_id in there, sometimes quote more than one source
+        if (edge_list_quote[which(rownames(edge_list_quote) == rownames(fp_similarity_mat)[j]),'primary_doc_id'] != ''){
+          edge_list_quote[which(rownames(edge_list_quote) == rownames(fp_similarity_mat)[j]),'primary_doc_id'] <- paste(
+            edge_list_quote[which(rownames(edge_list_quote) == rownames(fp_similarity_mat)[j]),'primary_doc_id'],
+            ',',
+            colnames(fp_similarity_mat)[i])
+          } else {
+            edge_list_quote[which(rownames(edge_list_quote) == rownames(fp_similarity_mat)[j]),'primary_doc_id'] <- colnames(
+              fp_similarity_mat)[i]
+          }
+          #reset the edge_list_quote rownames to derivative doc_id for referencing, it auto reverts when u load in data
+          rownames(edge_list_quote) <- edge_list_quote$derivative_doc_id
+          #no longer any need to reflect similarity if source is quoted, as it is now a "shadow" situation 
+          fp_similarity_mat[j,i] <- 0
+          fp_similarity_mat[i,j] <- 0
+        } else {
+          #if not a quoting relationship, check if the score is within range
+          if ((fp_similarity_mat[j,i] > 0) & (fp_similarity_mat[j,i] < 0.5)){
+            #check if the inverse similarity is similarly low
+            #if both are low, link is coincidental, ignore by reducing both to 0
+            if (fp_similarity_mat[i,j] < 0.5){
+              fp_similarity_mat[j,i] <- 0
+              fp_similarity_mat[i,j] <- 0
+            }
+          }
+        }
+      } else {
+        #if not in list of articles that have quoted before, then go straight to inverse check
+        #check is score is within range
+        if ((fp_similarity_mat[j,i] > 0) & (fp_similarity_mat[j,i] < 0.5)){
+          #check if the inverse similarity is similarly low
+          #if both are low, link is coincidental, ignore by reducing both to 0
+          if (fp_similarity_mat[i,j] < 0.5){
+            fp_similarity_mat[j,i] <- 0
+            fp_similarity_mat[i,j] <- 0
+          }
+        }
+      }
+  }
+}
+
+```
+
+```{r}
+#now we extract the relationships and label them, only the primary source's row will be labelled with a "1" for the corresponding derivative sources.
+#first, copy the similarity matrix
+
+fp_sim_copy <- fp_similarity_mat
+
+for (i in 1:nrow(fp_sim_copy)){
+  col_indices <- which(fp_similarity_mat[i,] >0)
+  if (length(col_indices)>1){
+    col_sums <- rep('', length(col_indices))
+    for (j in 1:length(col_indices)){
+      col_sums[j] <- sum(fp_similarity_mat[,col_indices[j]])-1
+    }
+    #doc A (row) in doc B (col) is the way the fp_similarity_mat is set out
+    #so the maxcol sum indicates the doc B in which most doc As are found
+    #and hence the primary source
+    #this checks if the current row is a primary source
+    if (col_indices[which.max(col_sums)] == i){
+    #if yes, then we erase all the other links  
+      for (k in 1:length(col_indices)){
+        #all links should be zero
+        for (m in 1:length(col_indices)){
+          fp_sim_copy[col_indices[m],col_indices[k]] <- 0
+        }
+        #mark with 1 on the primary source line
+        fp_sim_copy[i,col_indices[k]] <- 1
+      } 
+    }
+  }
+}
+#remove all the self similarities
+for (i in 1:nrow(fp_sim_copy)){
+  fp_sim_copy[i,i] <- 0
+}
+
+#extract only rows and cols with some marker in them
+fp_sim_copy <- fp_sim_copy[which(row_sums(fp_sim_copy)>0),which(col_sums(fp_sim_copy)>0)]
+
+#convert matrix to dataframe for pivoting
+fp_sim_copy <- as.data.frame(fp_sim_copy)
+
+#extract the rownames as a column for primary doc_id
+fp_sim_copy$primary_doc_id <- rownames(fp_sim_copy)
+
+#create the edge list for shadow authors
+edge_list_shadow <- fp_sim_copy %>%
+  pivot_longer(cols = !primary_doc_id,
+               names_to = 'derivative_doc_id') %>%
+  filter(value == 1)
+
+#remove the 'value' column
+edge_list_shadow <- edge_list_shadow[,c(1:2)]
+
+#add the additional edge details
+edge_list_shadow$primary_source <- ''
+edge_list_shadow$derivative_source <- ''
+
+for (i in 1:nrow(edge_list_shadow)){
+  #extract primary news source from article_df
+  edge_list_shadow$primary_source[i] <- article_df[edge_list_shadow$primary_doc_id[i],][2][[1]]
+  #extract derivative news source from article_df
+  edge_list_shadow$derivative_source[i] <- article_df[edge_list_shadow$derivative_doc_id[i],][2][[1]]
+}
+
+edge_list_shadow$type <- 'Shadow Authoring'
+
+#reorder the columns
+edge_list_shadow <- edge_list_shadow[,c(1,3,2,4,5)]
+```
 
 
+```{r}
+#tidy up the edge list for quoting
+
+for (i in 1:nrow(edge_list_quote)){
+  #check if there is more than one primary_doc_id, one article can quote many sources
+  if (length(str_split(edge_list_quote[i,'primary_doc_id'],',')[[1]]) > 1){
+    for (j in 1:length(str_split(edge_list_quote[i,'primary_doc_id'],',')[[1]])){
+      new_row <- c(str_trim(str_split(edge_list_quote[i,'primary_doc_id'],',')[[1]][j]),
+                   edge_list_quote$primary_source[i],
+                   edge_list_quote$derivative_doc_id[i],
+                   edge_list_quote$derivative_source[i],
+                   edge_list_quote$type[i])
+      #print(new_row)
+      edge_list_quote <- rbind(edge_list_quote,new_row)
+    }
+  }
+}
+
+#remove the multi-valued rows
+edge_list_quote <- edge_list_quote[-which(str_detect(edge_list_quote$primary_doc_id,',')),]
+```
+
+```{r}
+#tidy up the edge list and prepare graphics
+edge_list <- rbind(edge_list_quote,edge_list_shadow)
+
+
+```
 
 
 
