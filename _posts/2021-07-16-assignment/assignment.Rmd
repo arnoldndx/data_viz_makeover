@@ -858,7 +858,7 @@ dtm <-dtm %>%
 
 We plot a wordcloud to compare the common words used when each of the three entities are mentioned in an article.
 
-```{r, echo=F, layout="l-body-outset", fig.width = 600}
+```{r, echo=F, layout="l-body-outset", fig.width = 5}
 batch1 <- col_means(dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$POK]),])
 batch2 <- col_means(dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$Govt]),])
 batch3 <- col_means(dtm[which(rownames(dtm) %in% article_df$doc_id[article_df$GAStech]),])
@@ -869,10 +869,13 @@ batch <- rbind(batch1,
 
 rownames(batch) <- entities
 
-layout(matrix(c(1, 2), nrow=2), heights=c(1, 4))
+layout(matrix(c(1, 2), nrow=2), heights=c(1, 25))
 par(mar=rep(0, 4))
 plot.new()
-text(x=0.5, y=0.5, "FIGURE 5. Comparison wordcloud for various entity mentions")
+text(x=0.5, 
+     y=0.5,
+     cex = 0.6,
+     "FIGURE 5. Comparison wordcloud for various entity mentions")
 comparison.cloud(t(batch),
                  max.words=300,
                  random.order=FALSE,
