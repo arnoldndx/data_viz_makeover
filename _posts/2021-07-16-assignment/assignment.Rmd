@@ -31,11 +31,12 @@ caption {
 
 ```{r echo=FALSE}
 #load relevant libraries
-packages = c('DT','ggiraph','plotly','tidyverse',
+packages = c('DT','tidyverse','tidygraph','igraph',
              'tidytext','readtext','lubridate','formatR',
              'textstem', 'tm', 'slam', 'ggalluvial',
              'ggrepel','wordcloud','RColorBrewer','graphics',
-             'gbutils','grid','gridExtra')
+             'gbutils','grid','gridExtra','ggraph',
+             'clock','visNetwork')
 
 for (p in packages){
   if(!require(p,character.only = T)){
@@ -74,7 +75,7 @@ There are three main datasets that will need to be processed and tidied up. The 
 
 There is noise in the news article data, which includes incosistent line breaks, inconsistent formatting of article details such as dates, author names, etc., and inconsistent details provided per article. This has to be taken into account in processing the article data.
 
-### **Step 2.1.1:** Combine articles into single table for checking
+### 2.1.1. Combine articles into single table for checking
 
 We first begin by combining the article data into a single table to facilitate checks. We get the easy part out of the way and clean up the line breaks, by replacing all double line breaks with single line breaks with the code below.
 
@@ -99,7 +100,7 @@ We then export the data for manual cleaning (i.e. edit the text directly in the 
 write.csv(articles,"article_consol.csv")
 ```
 
-### **Step 2.1.2:** Load cleaned data and convert to article data into analysable dataframe
+### 2.1.2. Load cleaned data and convert to article data into analysable dataframe
 
 We now begin the task of converting the data into an analysable format. 
 
@@ -163,15 +164,71 @@ article_df$published <- as.Date(parse_date_time(article_df$published,c('dmy','md
 ```
 And we're done with the news article data!
 
-## 2.2. GAStech employee relationships
+## 2.2. GAStech employee data
+
+The GAStech employee data is already neatly captured in tabular form and will not need significant pre-processing. Just load it in!
+
+```{r}
+employee_data <- read.csv('MC 1/EmployeeRecords.csv')
+```
 
 ## 2.3. Email headers
+
+We will load in the email data and expand the email headers list. Every row should be a unique combination of individual sender, individual recipient, and subject. This will facilitate network analysis later.
+
+```{r eval=FALSE}
+email_header <- read_csv('MC 1/email headers.csv')
+
+#note that row 553 has an error in the date time, impute a time
+email_header$Date[553] <- '1/13/2014 9:00'
+
+email_header_proc <- c('source',
+                       'target',
+                       'sent_date',
+                       'sent_time',
+                       'subject')
+
+#convert email headers to a processed dataframe
+for (i in 1:nrow(email_header)){
+  #parse the date times
+  date <- format(mdy_hm(email_header$Date[i]),'%Y-%m-%d')
+  time <- format(mdy_hm(email_header$Date[i]),'%I:%M:%S %p')
+  #create a new row for each recepient
+  for (j in 1:length(str_split(email_header[i,2],',')[[1]])){
+    source <- email_header[i,1]
+    target <- str_trim(str_split(email_header[i,2],',')[[1]][j])
+    sent_date <- date
+    sent_time <- time
+    subject <- email_header[i,4]
+    new_row <- c(source, 
+                 target, 
+                 sent_date,
+                 sent_time,
+                 subject)
+    email_header_proc <- rbind(email_header_proc,new_row)
+  }
+}
+
+#remove top row
+email_header_proc <- email_header_proc[-1,]
+
+#reset rownames and colnames
+rownames(email_header_proc) <- c(1:nrow(email_header_proc))
+colnames(email_header_proc) <- c('source',
+                                 'target',
+                                 'sent_date',
+                                 'sent_time',
+                                 'subject')
+
+```
+
+And we're done with email headers!
 
 # 3. Solutions (Approach & Answers)
 
 Using the prepared data, we now answer the questions with the help of some meaningful visualisations.
 
-## 3.1. Question 1
+## 3.1. QUESTION 1
 _Characterize the news data sources provided. Which are primary sources and which are derivative sources? What are the relationships between the primary and derivative sources? Please limit your answer to 8 images and 300 words._
 
 ### 3.1.1. Solution Approach and Data Wrangling
@@ -1089,5 +1146,270 @@ _Given the data sources provided, use visual analytics to identify potential off
 
 ### 3.3.1. Solution Approach and Data Wrangling
 
+We will do a simple graph analysis to explore relationships between GAStech employees using the email headers coupled with some employee data.
+
+First, we will extract the email data for manual annotation.
+
+```{r eval=FALSE}
+write.csv(email_header_proc,'email_header_annotate.csv')
+```
+
+We reload the annotated data back in.
+
+```{r}
+edge_list <- read.csv('email_header_annotate.csv')
+
+#wrangling time
+edge_list$sent_date <- ymd(edge_list$sent_date)
+edge_list$weekday <- wday(edge_list$sent_date,
+                         label = TRUE,
+                         abbr = FALSE)
+
+#replace wrong email addresses
+edge_list$source <- str_replace(edge_list$source,'tethys','kronos')
+edge_list$target <- str_replace(edge_list$target,'tethys','kronos')
+
+```
+
+Now we will create nodes from the employee data.
+
+```{r}
+node_list <- employee_data[,c(1:3,5:6,12:15)]
+
+#need to add the 19- to make sure lubridate doesn't read as 21st century
+node_list$BirthDate <- str_replace(node_list$BirthDate, '-([0-9]{2}$)', '/19\\1')
+
+#convert to date
+node_list$BirthDate <- dmy(node_list$BirthDate)
+node_list$CurrentEmploymentStartDate <- dmy(node_list$CurrentEmploymentStartDate)
+
+#calculate age
+node_list$age <- year(max(edge_list$sent_date)) - year(node_list$BirthDate)
+node_list$years_employed <- year(max(edge_list$sent_date)) - year(node_list$CurrentEmploymentStartDate)
+
+#drop birth date and employee start date
+node_list <- node_list[,-c(3,8)]
+
+#give an id number for graphing
+node_list$id <- c(1:nrow(node_list))
+
+#rearrange the columns
+node_list <- node_list[,c(10,7,1,2,8,3,4,9,5,6)]
+
+#rename the columns
+colnames(node_list) <- c('id',
+                         'email',
+                         'last_name',
+                         'first_name',
+                         'age',
+                         'gender',
+                         'citizenship',
+                         'years_employed',
+                         'department',
+                         'title')
+```
+
+We will also prepare data to make alluvial plots. There might be too many unique employees and titles to get a meaningful visualisation, but we shall prepare first for experimentation.
+
+```{r}
+#prepare the edgelist for alluvial plot
+edge_list_alluv <- edge_list[,-1]
+
+edge_list_alluv$source_name <- ''
+edge_list_alluv$target_name <- ''
+edge_list_alluv$source_dept <- ''
+edge_list_alluv$target_dept <- ''
+edge_list_alluv$source_age <- ''
+edge_list_alluv$target_age <- ''
+edge_list_alluv$source_employed <- ''
+edge_list_alluv$target_employed <- ''
+edge_list_alluv$source_title <- ''
+edge_list_alluv$target_title <- ''
+
+for (i in 1:nrow(edge_list_alluv)){
+  edge_list_alluv$source_name[i] <- paste(node_list$last_name[which(node_list$email == edge_list_alluv$source[i])],
+                                          ', ',
+                                          node_list$first_name[which(node_list$email == edge_list_alluv$source[i])])
+  edge_list_alluv$target_name[i] <- paste(node_list$last_name[which(node_list$email == edge_list_alluv$target[i])],
+                                          ', ',
+                                          node_list$first_name[which(node_list$email == edge_list_alluv$target[i])])
+  edge_list_alluv$source_dept[i] <- node_list$department[which(node_list$email == edge_list_alluv$source[i])]
+  edge_list_alluv$target_dept[i] <- node_list$department[which(node_list$email == edge_list_alluv$target[i])]
+  edge_list_alluv$source_age[i] <- node_list$age[which(node_list$email == edge_list_alluv$source[i])]
+  edge_list_alluv$target_age[i] <- node_list$age[which(node_list$email == edge_list_alluv$target[i])]
+  edge_list_alluv$source_employed[i] <- node_list$years_employed[which(node_list$email == edge_list_alluv$source[i])]
+  edge_list_alluv$target_employed[i] <- node_list$years_employed[which(node_list$email == edge_list_alluv$target[i])]
+  edge_list_alluv$source_title[i] <- node_list$title[which(node_list$email == edge_list_alluv$source[i])]
+  edge_list_alluv$target_title[i] <- node_list$title[which(node_list$email == edge_list_alluv$target[i])]
+}
+
+create_aggregated_alluv <- function(alluv,detail){
+  targets <- list(c(8,9),
+                  c(10,11),
+                  c(12,13),
+                  c(14,15),
+                  c(16,17))
+  alluv_agg <- alluv %>%
+    group_by(type,
+             source = alluv[,targets[detail][[1]][1]],
+             target = alluv[,targets[detail][[1]][2]]) %>%
+    summarise(freq = n())
+  
+  return(alluv_agg)
+}
+
+alluv_name <- create_aggregated_alluv(edge_list_alluv,1)
+alluv_dept <- create_aggregated_alluv(edge_list_alluv,2)
+alluv_age <- create_aggregated_alluv(edge_list_alluv,3)
+alluv_employed <- create_aggregated_alluv(edge_list_alluv,4)
+alluv_title <- create_aggregated_alluv(edge_list_alluv,5)
+```
+
+We need to merge the ID numbers back with the edge list to support the graphing.
+
+```{r}
+emails_id <- node_list[,1:2]
+
+edge_list$from <- ''
+edge_list$to <- ''
+
+for (i in 1:nrow(edge_list)){
+  edge_list$from[i] <- which(emails_id$email == edge_list$source[i])
+  edge_list$to[i] <- which(emails_id$email == edge_list$target[i])
+}
+
+edge_list <- edge_list[,-c(1,3:4)]
+  
+edge_list <- edge_list %>% 
+  rename(
+    source = from,
+    target = to
+  )
+
+#aggregating the edges by count
+edge_list_aggregated_wr <- edge_list %>%
+  filter(type == "Work related") %>%
+  group_by(source, target, weekday) %>%
+    summarise(weight = n()) %>%
+  filter(source != target) %>%
+  filter(weight > 1) %>%
+  ungroup()
+
+edge_list_aggregated_nwr <- edge_list %>%
+  filter(type == "Non-work related") %>%
+  group_by(source, target, weekday) %>%
+    summarise(weight = n()) %>%
+  filter(source != target) %>%
+  filter(weight > 1) %>%
+  ungroup()
+
+```
+
+
 ### 3.3.2. Answer
 
+```{r echo=F}
+#define function to plot alluvial
+plot_alluv <- function (df,det,fig){
+  #define vector of details
+  details <- c('Name',
+               'Department',
+               'Age',
+               'Years Employed',
+               'Title')
+  
+  #define nudge vector for labelling
+  nudge1 <- rep(-1,length(unique(df$source)))
+  nudge2 <- rep(1,length(unique(df$target)))
+
+  nudge <- c(nudge1,nudge2)
+
+  #generate the sankey
+  ggplot(df,
+         aes(y = freq, axis1 = source, axis2 = target)) +
+    geom_alluvium(aes(fill = type), 
+                width = 1/12,
+                alpha = 0.3, 
+                knot.pos = 0.3) +
+    geom_stratum(width = 1/12, fill = "grey50", color = "white") +
+    scale_fill_manual('Type of Email',values  = c('greenyellow','grey50')) +
+    scale_color_manual(values = c('greenyellow','grey50')) +
+    scale_x_discrete(expand = c(.6, 0),
+                   limits = c("Sender", "Receiver")) +
+    ggrepel::geom_text_repel(
+      stat = "stratum", 
+      aes(label = after_stat(stratum)),
+      size = 3, 
+      direction = "y", 
+      nudge_x = nudge
+    ) +
+    ggtitle(paste('FIGURE ',
+                  fig,
+                  '. Email traffic by ',
+                  details[det])) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(size = 12, face = "bold"),
+          axis.text.y = element_blank(),
+          axis.title.y = element_blank(),
+          legend.position = 'top')
+}
+```
+
+With reference to Figure 8, we can see that most emails, whether work or non-work related are sent within a department. This indicates that employees tend to form social circles within their own departments, as is expected.
+
+```{r, echo=F}
+plot_alluv(alluv_dept,2,8)
+```
+Plotting a network graph to visualise the email relationships, we find very different relationships for the work-related (Figure 9) and non-work related (Figure 10) emails. For work related emails, the bulk of the emails are confined within the department. There are a few individuals who are at the centre of the network who send the most work emails across the organisation, namely the assistant to the CEO, and the assistant to the Engineering Group Manager.
+
+```{r layout="l-body-outset",echo=F}
+#visNetwork needs the column to be named from and to
+edge_list_aggregated_wr_tf <- edge_list_aggregated_wr %>%
+  rename(
+    from = source,
+    to = target
+  )
+
+#visNetwork needs to name the color coding column group
+colnames(node_list)[9] <- 'group'
+
+#visualise network
+visNetwork(node_list,
+           edge_list_aggregated_wr_tf,
+           main = 'FIGURE 9. Network graph of work-related emails') %>%
+  visIgraphLayout(layout = 'layout_with_fr') %>%
+  visGroups(groupname = 'Administration', color = 'lightblue') %>%
+  visGroups(groupname = 'Engineering', color = "green") %>%
+  visGroups(groupname = 'Executive', color = 'gold') %>%
+  visGroups(groupname = 'Facilities', color = "grey") %>%
+  visGroups(groupname = 'Information Technology', color = 'pink') %>%
+  visGroups(groupname = 'Security', color = "brown") %>%
+  visLegend()
+
+```
+
+```{r layout="l-body-outset", echo=F}
+#visNetwork needs the column to be named from and to
+edge_list_aggregated_nwr_tf <- edge_list_aggregated_nwr %>%
+  rename(
+    from = source,
+    to = target
+  )
+
+#visNetwork needs to name the color coding column group
+colnames(node_list)[9] <- 'group'
+
+#visualise network
+visNetwork(node_list,
+           edge_list_aggregated_nwr_tf,
+           main = 'FIGURE 10. Network graph of work-related emails') %>%
+  visIgraphLayout(layout = 'layout_with_fr') %>%
+  visGroups(groupname = 'Administration', color = 'lightblue') %>%
+  visGroups(groupname = 'Engineering', color = "green") %>%
+  visGroups(groupname = 'Executive', color = 'gold') %>%
+  visGroups(groupname = 'Facilities', color = "grey") %>%
+  visGroups(groupname = 'Information Technology', color = 'pink') %>%
+  visGroups(groupname = 'Security', color = "brown") %>%
+  visLegend()
+
+```
