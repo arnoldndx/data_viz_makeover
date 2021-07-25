@@ -1054,7 +1054,7 @@ ggplot(sent_scores,
         axis.text.x = element_text(size = 10, face = "bold"),
         axis.title.x = element_text(size = 12, face = "bold"))
 ```
-To validate our findings, let's perform a wordcloud of _All News Today's_ articles regarding each entity and see what kind of words they tend to use regarding each entity. From the word cloud, we can see that _All News Today_ tends to report alot on corruption and kleptocracy when reporting on GAStech or the government, while it tends to portray POK as a grassroots organisation supported by the people.
+To validate our findings, let's perform a wordcloud of _All News Today's_ articles regarding each entity and see what kind of words they tend to use regarding each entity. From the word cloud, we can see that _All News Today_ tends to report alot on corruption and kleptocracy when reporting on GAStech or the government, while it tends to portray POK as a grassroots organisation supported by the people. This validates our findings from the sentiment analysis.
 
 ```{r, echo=F}
 batch1 <- dtm_pk_bysrc['All News Today',]
@@ -1084,34 +1084,10 @@ comparison.cloud(t(batch),
 
 ```
 
-```{r eval=F, echo=F}
-
-
-
-
-res.pca <- prcomp(as.matrix(dtm_pk_bysrc),scale=F)
-
-fviz_eig(res.pca)
-fviz_pca_ind(res.pca,
-             col.ind = "cos2", # Color by the quality of representation
-             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-             repel = TRUE     # Avoid text overlapping
-             )
-
-```
-
-
-### 3.2.2. Answer
-
-
 ## 3.3. QUESTION 3 
 _Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives. Provide evidence for these relationships. Please limit your answer to 6 images and 400 words._
 
 ### 3.3.1. Solution Approach and Data Wrangling
 
 ### 3.3.2. Answer
-
-# References
-
-
 
