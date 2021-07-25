@@ -784,13 +784,43 @@ _Characterize any biases you identify in these news sources, with respect to the
 
 ##3.2.1. Solution Approach and Data Wrangling
 
-Visualising bias will require more in depth analysis of the article texts. We will used frequency-based analysis to characterise the articles.
+Visualising bias will require more in depth analysis of the article texts. We will used frequency-based analysis to characterise the articles for bias detection. First, we need to identify entities which we wish to study, namely:
+
+1. Protectors of Kronos
+2. Kronos Government
+3. GAStech
+
+We will define some keywords to label our dataset accordingly. Articles will be indicated as making a representation about each of these entities if certain keywords are mentioned in the article.
 
 ```{r}
 #define key words
+entities <- c('POK','Govt','GAStech')
 
+keywords1 <- c('Protectors of Kronos','POK','Elian Karel',
+               'Silvia Marek','Mandor Vann','Isia Vann',
+               'Lucio Jakab','Lorenzo Di Stefano')
+keywords2 <- c('government', 'ministry', 'minister', 
+               'president', 'military', 'police',
+               'mayor')
+keywords3 <- c('GAStech')
 
+keywords <- list(keywords1,keywords2,keywords3)
+
+article_df[entities] <- NA
+
+for (i in 1:nrow(article_df)){
+  text <- str_to_lower(gsub("[[:punct:]]", "", article_df$text[i]))
+  for (j in 1:length(keywords)){
+    for (k in 1:length(keywords[[j]])){
+      if (str_detect(text,str_to_lower(keywords[[j]][k]))){
+        article_df[i,7+j] <- TRUE
+      }
+    }
+  }
+}
 ```
+
+
 
 Firstly, we will convert our corpus of articles into a document-term matrix, using [text frequency - inverse document frequency](https://www.tidytextmining.com/tfidf.html) (TF-IDF) to fill in the values. TF-IDF is used because it supresses words that appear commonly across all documents through the inverse document frequency term. This eliminates the need to specify stopwords to remove from the corpus, which is tedious and might not be too accurate as some stopwords also depend on the unique characteristics of each corpus. We will also lemmatize the words using the [textstem](https://rdrr.io/cran/textstem/) package to better capture the meaning of each document by converting various forms of words to their root word (e.g. 'running', 'ran', and 'run' will be reduced to 'run'). Another approach is stemming, where t   he ends of words are truncated based on heuristics to remove derivational and inflectional affixes (e.g. -s, -ed, -es, -ing, -tion). Past research ([di Nanzio, Vezzani, 2018](http://ceur-ws.org/Vol-2253/paper45.pdf)) has shown that lemmatization and stemming are comparable in terms of performance. We will go with lemmatization for this project because the output are base words, which are more understandable.
 
