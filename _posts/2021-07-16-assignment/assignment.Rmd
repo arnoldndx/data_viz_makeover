@@ -1017,9 +1017,12 @@ sent_scores <- pivot_longer(sent_scores,
 
 ### 3.2.2. Answer
 
-Based on the results below, 
+Based on the results in Figure 6 below, we find that most news sources are more neutral in stance. In general there is greater variability in favorability for GAStech and POK, while favorability ratings for the government tend to be clustered in a tight band, indicating that most news sources tend to report objectively or slightly favorably on the government. This is perhaps to be expected, as the government is usually able to exert some influence over news media in a country. 
 
-```{r echo=F}
+It is noted that _Modern Rubicon_ is the most vehemently anti-government news source, while it is also the most pro-POK news source. This is not surprising, and _Modern Rubicon_ could have links with the POK organisation and senior leadership.
+
+
+```{r, echo=F}
 #generate the jitter stripchart
 ggplot(sent_scores, 
        aes(x = entity,
@@ -1043,6 +1046,35 @@ ggplot(sent_scores,
         axis.ticks.y = element_blank(),
         axis.text.x = element_text(size = 10, face = "bold"),
         axis.title.x = element_text(size = 12, face = "bold"))
+```
+To validate our findings, let's perform a wordcloud of _Modern Rubicon's_ articles regarding each entity and see what kind of words they tend to use regarding each entity.
+
+```{r, echo=F, layout="l-body-outset", fig.width = 5}
+batch1 <- dtm_pk_bysrc['Modern Rubicon',]
+batch2 <- dtm_gv_bysrc['Modern Rubicon',]
+batch3 <- dtm_ga_bysrc['Modern Rubicon',]
+
+batch <- rbind(batch1,
+               batch2,
+               batch3)
+
+rownames(batch) <- entities
+
+layout(matrix(c(1, 2), nrow=2), heights=c(1, 25))
+par(mar=rep(0, 4))
+plot.new()
+text(x=0.5, 
+     y=0.5,
+     cex = 0.6,
+     "FIGURE 7. Comparison wordcloud for various entity mentions for Modern Rubicon")
+comparison.cloud(t(batch),
+                 max.words=140,
+                 random.order=FALSE,
+                 rot.per=0.35,
+                 scale = c(2, 0.24),
+                 title.size = 1.5,
+                 colors = brewer.pal(8, "Dark2"))
+
 ```
 
 ```{r eval=F, echo=F}
