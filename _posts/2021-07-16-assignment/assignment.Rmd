@@ -621,7 +621,7 @@ Having completed the edge list for "Shadow Authoring" relationships, we now turn
 edge_list <- rbind(edge_list_quote[-which(edge_list_quote$primary_doc_id == ''),],edge_list_shadow)
 ```
 
-```{r}
+```{r layout="l-body-outset", fig.width = 20}
 #expand edge list with article details
 #add the additional edge details
 edge_list$primary_year <- ''
@@ -678,7 +678,7 @@ edge_list <- edge_list[-which(edge_list$primary_year > edge_list$derivative_year
 datatable(edge_list[,c(1:2,6:7,3:4,8:9,5,10)], 
           class = 'cell-border stripe',
           caption = 'TABLE 4. Full list of primary and derivative articles',
-          options = list(pageLength = 1,
+          options = list(pageLength = 10,
                          height = 450,
                          width = 800),
           rownames = FALSE,
@@ -1130,7 +1130,7 @@ sent_scores <- pivot_longer(sent_scores,
 
 Based on the results in Figure 6 below, we find that most news sources are more neutral in stance (i.e. clustered around the centre of the sentiment ratings). In general there is greater variability in favorability for POK, while favorability ratings for the government tend to be clustered in a tighter band, indicating that most news sources tend to report objectively or slightly favorably on the government. This is perhaps to be expected, as the government is usually able to exert some influence over news media in a country. 
 
-It is noted that _All News Today_ is an outlier. It is the most vehemently anti-government and anti-GAStech news source, while it is also the most pro-POK news source. This is not surprising, and _All News Today_ could have links with the POK organisation and senior leadership. We also note from the analysis in 4.2.1. that _All News Today_ derives alot of content from shadow authors in _Homeland Illumination_, which is also noted to be slightly negative towards the government and GAStech and slightly more positive towards POK. Identifying the shadow authors would be a good place to investigate for links between POK and the media.
+It is noted that _All News Today_ is an outlier. It is the most vehemently anti-government and anti-GAStech news source, while it is also the most pro-POK news source. This is not surprising, and _All News Today_ could have links with the POK organisation and senior leadership. We also note from the analysis in 4.2.1. that _All News Today_ derives alot of content from shadow authors (i.e. Petrus Gerhard and Maha Salo) in _Homeland Illumination_, which is also noted to be slightly negative towards the government and GAStech and slightly more positive towards POK. The shadow authors would be a good place to investigate for links between POK and the media.
 
 
 ```{r, echo=F}
