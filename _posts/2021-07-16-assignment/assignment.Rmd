@@ -35,8 +35,8 @@ packages = c('DT','tidyverse','tidygraph','igraph',
              'tidytext','readtext','lubridate','formatR',
              'textstem', 'tm', 'slam', 'ggalluvial',
              'ggrepel','wordcloud','RColorBrewer','graphics',
-             'gbutils','grid','gridExtra','ggraph',
-             'clock','visNetwork')
+             'gbutils','ggraph',
+             'clock','visNetwork','kableExtra')
 
 for (p in packages){
   if(!require(p,character.only = T)){
@@ -65,17 +65,46 @@ in order to answer the following questions.
 
 **QUESTION 3:** Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives. Provide evidence for these relationships. Please limit your answer to 6 images and 400 words.
 
-# 2. Data Preparation
+# 2. Literature Review and Methods
+
+## 2.1. Literature Review
+
+Past attempts at the VAST Challenge 2014, which uses the same dataset, was reviewed before attempting this assignment. The attempts were retrived from the VAST Challenge [Visual Analytics Benchmark Repository](https://www.cs.umd.edu/hcil/varepository/VAST%20Challenge%202014/challenges/MC1%20-%20Disappearance%20at%20GASTech/) hosted by the University of Maryland.
+
+Firstly, we noticed that most groups used alot of manual inspection of the text data, rather than more sophisticated text analysis. This is also why most groups spend upwards of 150 hours analysing the data to draw conclusions. As we are doing an individul and not a group assignment, our resources will be much more limited. For our analysis, we will attempt to use slightly more sophisticated analysis at of the text data at an aggregated level so as to draw some conclusions regarding the data more efficiently.
+
+TianJin University's [submission](https://www.cs.umd.edu/hcil/varepository/VAST%20Challenge%202014/challenges/MC1%20-%20Disappearance%20at%20GASTech/entries/Tianjin%20University%20-%20Cai/) did present a more sophisticated cluster analysis of the news articles to identify media bias, but they did not provide details on how they approached the clustering. We will instead develop a new approach to our media bias analysis based on customised sentiment analysis.
+
+To analyse the relationships between entities for part 3, most used variants of network graphs and Sankey diagrams. We will adopt a similar approach in analysing the relationships.
+
+
+## 2.2. R Packages used
+
+The following R packages are used in this assignment:
+
+R Package | Usage
+----------|------------
+tidyverse,  formatR,  gbutils | Utilities for data wrangling
+lubridate,  clock | Utilities to manage dates
+DT, kableExtra | To produce data tables for viewing data
+tidytext,  readtext,  textstem,  tm,  slam | Utilities for text data wrangling and matrix multiplications
+graphics,  ggrepel,  RcolorBrewer | Utilities for graph plotting
+ggalluvial | Plotting Sankey/Alluvial plots
+wordcloud | Plotting wordclouds
+visNetwork | Plotting network graphs
+
+
+# 3. Data Preparation
 
 Firstly, we will need to clean up and process the data into data tables to facilitate analysis. We will use a combination of R tools and manual inspection/editing to clean up the data.
 
 There are three main datasets that will need to be processed and tidied up. The first set comprises the news articles. They will have to be collected into a data table for analysis, with key article details such as title, author, publish date, etc. extracted to facilitate analysis. The second set of data comprises the employee relationships to each other, as well as entities such as countries, organisations, persons outside GAStech, etc. The third and final set of data comprises email headers for two weeks worth of emails, along with labels of the type of emails. 
 
-## 2.1. News Articles
+## 3.1. News Articles
 
 There is noise in the news article data, which includes incosistent line breaks, inconsistent formatting of article details such as dates, author names, etc., and inconsistent details provided per article. This has to be taken into account in processing the article data.
 
-### 2.1.1. Combine articles into single table for checking
+### 3.1.1. Combine articles into single table for checking
 
 We first begin by combining the article data into a single table to facilitate checks. We get the easy part out of the way and clean up the line breaks, by replacing all double line breaks with single line breaks with the code below.
 
@@ -100,7 +129,7 @@ We then export the data for manual cleaning (i.e. edit the text directly in the 
 write.csv(articles,"article_consol.csv")
 ```
 
-### 2.1.2. Load cleaned data and convert to article data into analysable dataframe
+### 3.1.2. Load cleaned data and convert to article data into analysable dataframe
 
 We now begin the task of converting the data into an analysable format. 
 
@@ -164,7 +193,7 @@ article_df$published <- as.Date(parse_date_time(article_df$published,c('dmy','md
 ```
 And we're done with the news article data!
 
-## 2.2. GAStech employee data
+## 3.2. GAStech employee data
 
 The GAStech employee data is already neatly captured in tabular form and will not need significant pre-processing. Just load it in!
 
@@ -172,7 +201,7 @@ The GAStech employee data is already neatly captured in tabular form and will no
 employee_data <- read.csv('MC 1/EmployeeRecords.csv')
 ```
 
-## 2.3. Email headers
+## 3.3. Email headers
 
 We will load in the email data and expand the email headers list. Every row should be a unique combination of individual sender, individual recipient, and subject. This will facilitate network analysis later.
 
@@ -224,14 +253,14 @@ colnames(email_header_proc) <- c('source',
 
 And we're done with email headers!
 
-# 3. Solutions (Approach & Answers)
+# 4. Solutions (Approach & Answers)
 
 Using the prepared data, we now answer the questions with the help of some meaningful visualisations.
 
-## 3.1. QUESTION 1
+## 4.1. QUESTION 1
 _Characterize the news data sources provided. Which are primary sources and which are derivative sources? What are the relationships between the primary and derivative sources? Please limit your answer to 8 images and 300 words._
 
-### 3.1.1. Solution Approach and Data Wrangling
+### 4.1.1. Solution Approach and Data Wrangling
 
 There are two ways to detect derivative sources:
 
@@ -294,14 +323,14 @@ article_df <- article_df[,1:7]
 #rename the rows in article_df to doc_id for easier referencing
 rownames(article_df) <- article_df$doc_id
 
-datatable(edge_list_quote,
-          caption = 'TABLE 1. List of "Quoting" relationships',
-          rownames = F,
-          colnames = c("Primary doc ID",
-                       "Primary news source",
-                       "Derivative document ID",
-                       "Derivative news source",
-                       "Relationship Type"))
+edge_list_quote %>%
+  kbl(caption = 'List of "Quoting" relationships',
+      col.names = c("Primary doc ID",
+                    "Primary news source",
+                    "Derivative document ID",
+                    "Derivative news source",
+                    "Relationship Type")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
 
 ```
 There are only six quoting relationships detected in Step 1. We will see if we can derive more insight from the data in Step 2.
@@ -646,6 +675,24 @@ for (i in 1:nrow(edge_list)){
 #drop those where primary year > derivative year
 edge_list <- edge_list[-which(edge_list$primary_year > edge_list$derivative_year),]
 
+datatable(edge_list[,c(1:2,6:7,3:4,8:9,5,10)], 
+          class = 'cell-border stripe',
+          caption = 'TABLE 4. Full list of primary and derivative articles',
+          options = list(pageLength = 1,
+                         height = 450,
+                         width = 800),
+          rownames = FALSE,
+          colnames = c("Primary doc ID",
+                       "Primary News Source",
+                       "Primary Publication Year",
+                       "Primary Author",
+                       "Derivative doc ID",
+                       "Derivative News Source",
+                       "Derivative Publication Year",
+                       "Derivative Author",
+                       "Type of Relationship",
+                       "Similarity Score"))
+
 ```
 
 We then prepare the data for visualisation.
@@ -673,7 +720,7 @@ edge_list_bysrc_aft2005 <- edge_list %>%
   summarise(freq = n())
 ```
 
-### 3.1.2. Answer
+### 4.1.2. Answer
 
 ```{r echo=F}
 #define nudge vector for labelling
@@ -714,7 +761,7 @@ ggplot(edge_list_bysrc,
         axis.title.y = element_blank(),
         legend.position = 'bottom')
 ```
-From Figure 1 above, it can be seen that the bulk of the similarity between sources is due to "Shadow Authoring", where authors write for multiple news organisations without using their names. It is perhaps not surprising, given that Kronos is a very small country with a population of only 783,305 people, but supporting a media industry of 29 different news sources. From Figure 1, it appears that _News Online Today_ is the biggest beneficiary of such shadow authoring, with primary sources ranging from _Homeland Illumination_, _International Times_, _Kronos Star_, _The Abila Post_, and _The World_. _News Online Today_ appears to also be the largest single news agency in Kronos by article volume (see Figure 2 below), which probably indicates that they may also be one of the mainstream news sources in Kronos, which is why they are attractive to shadow writers.
+From Figure 1 above, it can be seen that the bulk of the similarity between sources is due to "Shadow Authoring", where authors write for multiple news organisations without using their names. It is perhaps not surprising, given that Kronos is a very small country with a population of only 783,305 people, but supporting a media industry of 29 different news sources. From Figure 1, it appears that _News Online Today_ is the biggest beneficiary of such shadow authoring, with primary sources ranging from _Homeland Illumination_, _International Times_, _Kronos Star_, _The Abila Post_, and _The World_. _News Online Today_ appears to also be the largest single news agency in Kronos by article volume (see Figure 2 below), which probably indicates that they may also be one of the mainstream news sources in Kronos, which is why they are attractive to shadow writers. Some sources like _All News Today_ (linked to _Homeland Illumination_), _Central Bulletin_ (linked to _The Abila Post_), _International News_ (linked to _Kronos Star_), _Who What News_ (linked to _The World_), and _World Source_ (linked to _International Times_) derive almost all their derivative articles from a single source. This indicates that there might be some links between the reporting staff at those agencies and the primary source news agencies.
 
 ```{r, echo = F}
 source_vol <- article_df %>%
@@ -837,10 +884,10 @@ ggplot(edge_list_bysrc_aft2005,
 ```
 
 
-## 3.2. QUESTION 2
+## 4.2. QUESTION 2
 _Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. Give examples. Please limit your answer to 6 images and 500 words._
 
-## 3.2.1. Solution Approach and Data Wrangling
+## 4.2.1. Solution Approach and Data Wrangling
 
 Visualising bias will require more in depth analysis of the article texts. We will used frequency-based analysis to characterise the articles for bias detection. First, we need to identify entities which we wish to study, namely:
 
@@ -1079,11 +1126,11 @@ sent_scores <- pivot_longer(sent_scores,
 
 ```
 
-### 3.2.2. Answer
+### 4.2.2. Answer
 
 Based on the results in Figure 6 below, we find that most news sources are more neutral in stance (i.e. clustered around the centre of the sentiment ratings). In general there is greater variability in favorability for POK, while favorability ratings for the government tend to be clustered in a tighter band, indicating that most news sources tend to report objectively or slightly favorably on the government. This is perhaps to be expected, as the government is usually able to exert some influence over news media in a country. 
 
-It is noted that _All News Today_ is the most vehemently anti-government and anti-GAStech news source, while it is also the most pro-POK news source. This is not surprising, and _All News Today_ could have links with the POK organisation and senior leadership.
+It is noted that _All News Today_ is an outlier. It is the most vehemently anti-government and anti-GAStech news source, while it is also the most pro-POK news source. This is not surprising, and _All News Today_ could have links with the POK organisation and senior leadership. We also note from the analysis in 4.2.1. that _All News Today_ derives alot of content from shadow authors in _Homeland Illumination_, which is also noted to be slightly negative towards the government and GAStech and slightly more positive towards POK. Identifying the shadow authors would be a good place to investigate for links between POK and the media.
 
 
 ```{r, echo=F}
@@ -1095,6 +1142,17 @@ ggplot(sent_scores,
               size = 3,
               alpha = 0.5,
               colour = 'deepskyblue4') +
+  geom_hline(yintercept = 0,
+             linetype = 'dashed',
+             color = 'red')+
+  geom_text(aes(3.5,
+                2.5,
+                label = 'More Favorable\nthan Average',
+                color = 'green')) +
+  geom_text(aes(3.5,
+                -3,
+                label = 'Less Favorable\nthan Average',
+                color = 'red')) +
   scale_x_discrete(expand = c(.6, 0)) +
   ggrepel::geom_text_repel(
     stat = "identity", 
@@ -1109,7 +1167,9 @@ ggplot(sent_scores,
   theme(axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         axis.text.x = element_text(size = 10, face = "bold"),
-        axis.title.x = element_text(size = 12, face = "bold"))
+        axis.title.x = element_text(size = 12, face = "bold"),
+        legend.position = "none",
+        text = element_text(size = 7, face = "bold"))
 ```
 To validate our findings, let's perform a wordcloud of _All News Today's_ articles regarding each entity and see what kind of words they tend to use regarding each entity. From the word cloud, we can see that _All News Today_ tends to report alot on corruption and kleptocracy when reporting on GAStech or the government, while it tends to portray POK as a grassroots organisation supported by the people. This validates our findings from the sentiment analysis.
 
@@ -1141,10 +1201,10 @@ comparison.cloud(t(batch),
 
 ```
 
-## 3.3. QUESTION 3 
+## 4.3. QUESTION 3 
 _Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives. Provide evidence for these relationships. Please limit your answer to 6 images and 400 words._
 
-### 3.3.1. Solution Approach and Data Wrangling
+### 4.3.1. Solution Approach and Data Wrangling
 
 We will do a simple graph analysis to explore relationships between GAStech employees using the email headers coupled with some employee data.
 
@@ -1306,7 +1366,7 @@ edge_list_aggregated_nwr <- edge_list %>%
 ```
 
 
-### 3.3.2. Answer
+### 4.3.2. Answer
 
 ```{r echo=F}
 #define function to plot alluvial
