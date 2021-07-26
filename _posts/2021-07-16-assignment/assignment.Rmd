@@ -1004,6 +1004,8 @@ However, we now need to characterise the individual words in order to capture se
     - **Normalise the sentiment scores, by computing the z-statistic.** This is to ensure that the relative favorability of a news source for each entity is comparable across entities
 3. **Visualise the relative favorability of each news source with respect to each entity.**
 
+We use manual annotation of the vocabulary because our approach to detection entity mentions does not preclude the possibility that one article may mention multiple entities (e.g. talking about both the govt and POK or all three). If we were to use open source sentiment dictionaries, we would not be able to distinguish which entity the positive or negative sentiment is about. Thankfully, the words that are used to describe each entity are usually quite divergent. For example, corruption would not be used to describe POK (for which the divergent opinion will be between seeing them as a terrorist group or a just cause), but would most certainly be directed at the government or GAStech. In this way, we can craft a bespoke sentiment dictionary that allows us to extract sentiments unique to our particular use case.
+
 ```{r, eval = F}
 #extract vocabulary, only interested in words with high tf-idf scores
 vocabulary <- c()
