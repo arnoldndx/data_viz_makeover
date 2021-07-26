@@ -1148,11 +1148,11 @@ ggplot(sent_scores,
   geom_text(aes(3.5,
                 2.5,
                 label = 'More Favorable\nthan Average',
-                color = 'green')) +
+                color = 'red')) +
   geom_text(aes(3.5,
                 -3,
                 label = 'Less Favorable\nthan Average',
-                color = 'red')) +
+                color = 'green')) +
   scale_x_discrete(expand = c(.6, 0)) +
   ggrepel::geom_text_repel(
     stat = "identity", 
